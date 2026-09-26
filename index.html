@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>۴ دیواری</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050505">
+<meta name="description" content="۴ دیواری؛ املاک آنلاین شما برای جست‌وجو، اجاره، فروش و سرمایه‌گذاری">
+<meta name="application-name" content="۴ دیواری">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="۴ دیواری">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" href="assets/icons/favicon-32.png" type="image/png">
+<link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="app-shell" id="appShell">
+  <div class="topbar">
+    <div class="brand"><img class="brand-logo" src="assets/icons/logo.svg" alt="۴ دیواری"><div class="brand-copy"><span class="logo">۴ دیواری</span><small>املاکی آنلاین شما</small></div></div>
+    <div class="topbar-btns">
+      <button class="icon-btn" id="themeBtn" title="حالت روشن/تیره">◐</button>
+      <button class="icon-btn" id="menuBtn" title="منوی اصلی" aria-label="منوی اصلی">☰</button>
+    </div>
+  </div>
+  <main id="view"></main>
+  <nav class="tabbar">
+    <button class="tab-btn" data-tab="browse"><span class="ic">🏠</span><span>آگهی‌ها</span></button>
+    <button class="tab-btn" data-tab="post"><span class="ic">➕</span><span>ثبت آگهی</span></button>
+    <button class="tab-btn" data-tab="tenders"><span class="ic">🏛️</span><span>مناقصات</span></button>
+    <button class="tab-btn" data-tab="map"><span class="ic">🗺️</span><span>نقشه</span></button>
+  </nav>
+</div>
+<div id="printArea"></div>
+
+<script src="assets/js/app.js" defer></script>
+<script>window.KHB_BUILD="0.7.2";</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>

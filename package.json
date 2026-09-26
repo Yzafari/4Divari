@@ -1,0 +1,20 @@
+{
+  "name": "khaneh-be-khaneh",
+  "version": "0.7.2",
+  "description": "۴ دیواری — املاک آنلاین شما؛ Web/PWA + Android + iOS + FastAPI backend",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "npx http-server . -p 8080 -c-1",
+    "start": "npm run dev",
+    "build": "node ./scripts/build.js",
+    "verify": "node ./scripts/build.js && node ./scripts/verify.js",
+    "test:backend": "python backend/tests/smoke.py"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

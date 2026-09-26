@@ -1,0 +1,32 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  111111111111111111111111 /* Project */ = {isa = PBXProject; attributes = {LastUpgradeCheck = 1600;}; buildConfigurationList = 111111111111111111111112; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = 111111111111111111111113; productRefGroup = 111111111111111111111114; projectDirPath = ""; projectRoot = ""; targets = (111111111111111111111115);};
+  111111111111111111111113 = {isa = PBXGroup; children = (111111111111111111111116,111111111111111111111117,111111111111111111111118,111111111111111111111119,111111111111111111111132); sourceTree = "<group>";};
+  111111111111111111111114 = {isa = PBXGroup; children = (111111111111111111111120); name = Products; sourceTree = "<group>";};
+  111111111111111111111115 = {isa = PBXNativeTarget; buildConfigurationList = 111111111111111111111121; buildPhases = (111111111111111111111122,111111111111111111111123); buildRules = (); dependencies = (); name = KhanehBeKhaneh; productName = KhanehBeKhaneh; productReference = 111111111111111111111120; productType = "com.apple.product-type.application";};
+  111111111111111111111116 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>";};
+  111111111111111111111117 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>";};
+  111111111111111111111118 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>";};
+  111111111111111111111119 = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>";};
+  111111111111111111111120 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KhanehBeKhaneh.app; sourceTree = BUILT_PRODUCTS_DIR;};
+  111111111111111111111122 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (111111111111111111111124,111111111111111111111125); runOnlyForDeploymentPostprocessing = 0;};
+  111111111111111111111123 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (111111111111111111111126,111111111111111111111127,111111111111111111111133); runOnlyForDeploymentPostprocessing = 0;};
+  111111111111111111111124 = {isa = PBXBuildFile; fileRef = 111111111111111111111116;};
+  111111111111111111111125 = {isa = PBXBuildFile; fileRef = 111111111111111111111117;};
+  111111111111111111111126 = {isa = PBXBuildFile; fileRef = 111111111111111111111118;};
+  111111111111111111111127 = {isa = PBXBuildFile; fileRef = 111111111111111111111119;};
+  111111111111111111111133 = {isa = PBXBuildFile; fileRef = 111111111111111111111132;};
+  111111111111111111111132 = {isa = PBXFileReference; lastKnownFileType = folder; path = www; sourceTree = "<group>";};
+  111111111111111111111121 = {isa = XCConfigurationList; buildConfigurations = (111111111111111111111128,111111111111111111111129); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  111111111111111111111128 = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = ir.khanehbekhaneh.app; INFOPLIST_FILE = Info.plist; SWIFT_VERSION = 5.0; IPHONEOS_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 0.7.2; CURRENT_PROJECT_VERSION = 702; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic;}; name = Debug;};
+  111111111111111111111129 = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_BUNDLE_IDENTIFIER = ir.khanehbekhaneh.app; INFOPLIST_FILE = Info.plist; SWIFT_VERSION = 5.0; IPHONEOS_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 0.7.2; CURRENT_PROJECT_VERSION = 702; TARGETED_DEVICE_FAMILY = "1,2"; CODE_SIGN_STYLE = Automatic;}; name = Release;};
+  111111111111111111111112 = {isa = XCConfigurationList; buildConfigurations = (111111111111111111111130,111111111111111111111131); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  111111111111111111111130 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO;}; name = Debug;};
+  111111111111111111111131 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO;}; name = Release;};
+ };
+ rootObject = 111111111111111111111111;
+}

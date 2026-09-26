@@ -1,0 +1,61 @@
+{
+  "name": "۴ دیواری",
+  "short_name": "۴ دیواری",
+  "description": "۴ دیواری؛ املاک آنلاین شما برای فروش، اجاره، سرمایه‌گذاری و اجاره کوتاه‌مدت داخلی و خارجی",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "fa",
+  "dir": "rtl",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "prefer_related_applications": false,
+  "categories": [
+    "business",
+    "lifestyle"
+  ],
+  "shortcuts": [
+    {
+      "name": "ثبت آگهی",
+      "short_name": "ثبت آگهی",
+      "url": "./?tab=post",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "نقشه املاک",
+      "short_name": "نقشه",
+      "url": "./?tab=map",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
