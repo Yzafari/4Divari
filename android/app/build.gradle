@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId 'ir.khanehbekhaneh.app'
-        minSdk 23
+        minSdk 24
         targetSdk 36
         versionCode 702
         versionName '0.7.2'
