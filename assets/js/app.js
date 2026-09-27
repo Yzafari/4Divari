@@ -172,7 +172,7 @@ function blankDraft(isTender){
 /* ============================ ذخیره‌سازی ============================ */
 const LKEY='khb_listings_v5', SKEY='khb_settings_v2';
 function loadListings(){ try{ return JSON.parse(localStorage.getItem(LKEY))||seedListings(); }catch(e){ return seedListings(); } }
-function saveListings(list){ try{ localStorage.setItem(LKEY, JSON.stringify(list)); }catch(e){} }
+
 function loadSettings(){
   try{ return JSON.parse(localStorage.getItem(SKEY))|| defaultSettings(); }
   catch(e){ return defaultSettings(); }
@@ -205,8 +205,8 @@ function seedListings(){
   return list;
 }
 
-let listings = loadListings();
-let settings = loadSettings();
+var listings = loadListings();
+var settings = loadSettings();
 applyTheme();
 const carouselTimers = {};
 
