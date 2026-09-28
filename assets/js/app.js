@@ -139,6 +139,7 @@ let state = {
   map:{},
   drawerOpen:false,
   operatorUnlocked:false,
+  operator:{filter:'all', selectedId:null},
 };
 
 function blankDraft(isTender){
@@ -1488,7 +1489,7 @@ function initPublicMap(el){if(!window.L||!el||el.dataset.mapReady==='1')return;e
    به کارشناس/سامانه‌های رسمی نیازمند Backend و قراردادهای واقعی هستند.
 */
 
-const FOURDIVARI_VERSION='0.7.1';
+const FOURDIVARI_VERSION='0.7.2';
 const MEDIA_URLS={};
 const EXPERT_KEY='khb_expert_requests_v1';
 const SERVICE_PRICES={
