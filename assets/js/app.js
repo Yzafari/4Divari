@@ -1078,7 +1078,7 @@ function bindDynamicHandlers(){
   // ---- Wizard: step 1 ----
   const dOrg=document.getElementById('dOrg'); if(dOrg) dOrg.addEventListener('input', e=>{ getDraft(isTenderScreen).orgName=e.target.value; refreshNextBtn(isTenderScreen); });
   view.querySelectorAll('[data-setcat]').forEach(el=>el.addEventListener('click', ()=>{ getDraft(isTenderScreen).category=el.dataset.setcat; render(); }));
-  const dProvince=document.getElementById('dProvince'); if(dProvince) dProvince.addEventListener('change', e=>{ getDraft(isTenderScreen).province=e.target.value; getDraft(isTenderScreen).city=''; render(); });
+  const dProvince=document.getElementById('dProvince'); if(dProvince) dProvince.addEventListener('change', e=>{ const d=getDraft(isTenderScreen); d.province=e.target.value; d.city=''; const city=document.getElementById('dCity'); if(city){ city.disabled=!d.province; city.innerHTML='<option value="">انتخاب کنید</option>'+(d.province?(PROVINCES[d.province]||[]).map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join(''):''); } refreshNextBtn(isTenderScreen); });
   const dCountry=document.getElementById('dCountry'); if(dCountry) dCountry.addEventListener('change', e=>{ const d=getDraft(isTenderScreen); d.country=e.target.value; d.province=''; d.city=''; render(); });
   const dForeignProvince=document.getElementById('dForeignProvince'); if(dForeignProvince) dForeignProvince.addEventListener('input', e=>{getDraft(isTenderScreen).province=e.target.value;refreshNextBtn(isTenderScreen);});
   const dForeignCity=document.getElementById('dForeignCity'); if(dForeignCity) dForeignCity.addEventListener('input', e=>{getDraft(isTenderScreen).city=e.target.value;refreshNextBtn(isTenderScreen);});
