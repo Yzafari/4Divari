@@ -1204,7 +1204,11 @@ function bindDynamicHandlers(){
   const printContractBtn=view.querySelector('[data-printcontract]'); if(printContractBtn) printContractBtn.addEventListener('click', ()=>{ const l=listings.find(x=>x.id===printContractBtn.dataset.printcontract); doPrint(buildContractPrintable(l)); });
 }
 
-function getDraft(isTender){ return isTender? state.tenders.draft : state.post.draft; }
+function getDraft(isTender){
+  const key = isTender ? 'tenders' : 'post';
+  if(!state[key].draft) state[key].draft = blankDraft();
+  return state[key].draft;
+}
 function setPath(obj, path, val){ const parts=path.split('.'); let cur=obj; for(let i=0;i<parts.length-1;i++) cur=cur[parts[i]]; cur[parts[parts.length-1]]=val; }
 function bindNum(id, path, isTender){ const el=document.getElementById(id); if(el) el.addEventListener('input', e=>{ setPath(getDraft(isTender), path, e.target.value); }); }
 function bindText(id, path, isTender){ const el=document.getElementById(id); if(el) el.addEventListener('input', e=>{ setPath(getDraft(isTender), path, e.target.value); }); }
