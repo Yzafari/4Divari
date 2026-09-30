@@ -1214,7 +1214,30 @@ function getDraft(isTender){
 function setPath(obj, path, val){ const parts=path.split('.'); let cur=obj; for(let i=0;i<parts.length-1;i++) cur=cur[parts[i]]; cur[parts[parts.length-1]]=val; }
 function bindNum(id, path, isTender){ const el=document.getElementById(id); if(el) el.addEventListener('input', e=>{ setPath(getDraft(isTender), path, e.target.value); }); }
 function bindText(id, path, isTender){ const el=document.getElementById(id); if(el) el.addEventListener('input', e=>{ setPath(getDraft(isTender), path, e.target.value); }); }
-function bindNumWords(id, path, isTender){ const el=document.getElementById(id); if(el) el.addEventListener('input', e=>{ setPath(getDraft(isTender), path, e.target.value); render(); }); }
+function bindNumWords(id, path, isTender){
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  el.addEventListener('input', e=>{
+    const value = e.target.value;
+
+    // ذخیره مقدار بدون بازسازی صفحه
+    setPath(getDraft(isTender), path, value);
+
+    // به‌روزرسانی فقط متن «به حروف»
+    const hint = el.nextElementSibling;
+
+    if(hint && hint.classList.contains('words-hint')){
+      hint.textContent = value
+        ? numberToWordsFa(value)
+        : 'به حروف اینجا نمایش داده می‌شود';
+    }
+  });
+}
+
+
+
+
 
 function refreshNextBtn(isTender){
   const prefix = isTender?'t':'p';
