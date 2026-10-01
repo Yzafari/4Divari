@@ -1325,7 +1325,94 @@ function stepPricing(d){const cat=catInfo(d.category);return (cat.rent?'<label c
 function stepIdentity(d){const box=(k,l,s)=>'<div class="upload-box '+(d.identity[k]?'has-file':'')+'">'+(d.identity[k]?'<img src="'+d.identity[k]+'" style="max-height:90px;border-radius:8px;margin-bottom:6px;">':'')+'<span class="ic">'+(d.identity[k]?'✅':'🪪')+'</span><div class="lbl">'+l+'</div><div class="sub">'+(d.identity[k]?'بارگذاری شد — برای تغییر لمس کنید':s)+'</div><input type="file" accept="image/*" data-idfile="'+k+'"></div>';return guidanceBox(4)+'<div class="privacy-hero"><b>اطلاعات هویتی شما نزد ۴ دیواری محرمانه است.</b><span>این مدارک برای احراز هویت و تشکیل پرونده دریافت می‌شود و در آگهی عمومی نمایش داده نمی‌شود.</span></div>'+box('national','عکس کارت ملی','واضح و کامل')+box('birth','عکس شناسنامه','صفحه اول شناسنامه')+box('sana','عکس برگه ثنا','تصویر صفحه ثبت‌نام ثنا')}
 function stepProperty(d){const section=(k,l)=>'<label class="field-label">'+l+' <span class="pill">'+d.property[k].length+' عکس</span></label><div class="thumb-grid">'+d.property[k].map((src,i)=>'<div class="thumb"><img src="'+src+'"><button class="rm" data-rmprop="'+k+':'+i+'">✕</button></div>').join('')+'<div class="thumb-add"><span>➕</span><span>افزودن</span><input type="file" accept="image/*" multiple data-propfile="'+k+'"></div></div>';return guidanceBox(5)+'<div class="privacy-hero"><b>این اسناد سرمایه و حریم خصوصی شما هستند.</b><span>در نسخه نهایی، فایل‌ها باید در فضای خصوصی و با کنترل دسترسی نگهداری شوند.</span></div>'+section('ownership','اسناد مالکیت')+section('construction','اسناد ساخت‌وساز')+section('permits','مجوزات و مستندات')+'<div class="field-hint">حداقل یک تصویر از اسناد مالکیت برای ادامه لازم است.</div>'}
 function stepDealPhotos(d){return guidanceBox(6)+'<label class="field-label">عکس‌های مورد معامله <span class="pill">'+d.dealPhotos.length+' از ۸</span></label><div class="thumb-grid">'+d.dealPhotos.map((src,i)=>'<div class="thumb"><img src="'+src+'"><button class="rm" data-rmdeal="'+i+'">✕</button></div>').join('')+(d.dealPhotos.length<8?'<div class="thumb-add"><span>📷</span><span>افزودن عکس</span><small>خودکار کم‌حجم می‌شود</small><input type="file" accept="image/*" multiple id="dealFileInput"></div>':'')+'</div><div class="compression-note">⚡ عکس‌های بزرگ قبل از ذخیره کم‌حجم می‌شوند.</div>'}
-function renderWizard(isTender){const st=isTender?state.tenders:state.post;st.draft=ensureDraftShape(st.draft);const d=st.draft,step=st.step,can=validateStep(step,d,isTender),prefix=isTender?'t':'p';const dots='<div class="stepper">'+WIZARD_STEPS.map((x,i)=>{const n=i+1;return '<div class="step-dot '+(n<step?'done ':'')+(n===step?'current':'')+'" title="'+x+'">'+(n<step?'✓':n)+'</div>'+(i<6?'<div class="step-line '+(n<step?'done':'')+'"></div>':'')}).join('')+'</div>';let body=step===1?stepCategory(d,isTender):step===2?stepStructural(d):step===3?stepPricing(d):step===4?stepIdentity(d):step===5?stepProperty(d):step===6?stepDealPhotos(d):stepReview(d,isTender);return '<div class="wizard-header"><div class="wizard-kicker">مرحله '+toFa(step)+' از ۷</div>'+dots+'<div class="step-title">'+(PAGE_GUIDANCE[step]?.[0]||WIZARD_STEPS[step-1])+'</div><div class="step-sub">'+(PAGE_GUIDANCE[step]?.[1]||stepSub(step))+'</div></div>'+body+'<div class="btn-row" style="margin-top:20px">'+(step>1?'<button class="btn btn-outline" data-wiz="back-'+prefix+'">مرحله قبل</button>':'')+(step<7?'<button class="btn btn-primary" data-wiz="next-'+prefix+'" '+(can?'':'disabled')+'>مرحله بعد</button>':'<button class="btn btn-primary" data-wiz="submit-'+prefix+'" '+(can?'':'disabled')+'>ثبت نهایی</button>')+'</div>'}
+function renderWizard(isTender){
+  const st=isTender?state.tenders:state.post;
+
+  st.draft=ensureDraftShape(st.draft);
+
+  const d=st.draft;
+  const step=st.step;
+  const can=validateStep(step,d,isTender);
+  const prefix=isTender?'t':'p';
+
+  const dots='<div class="stepper">'+
+    WIZARD_STEPS.map((x,i)=>{
+      const n=i+1;
+
+      return '<div class="step-dot '+
+        (n<step?'done ':'')+
+        (n===step?'current':'')+
+        '" title="'+x+'">'+
+        (n<step?'✓':n)+
+        '</div>'+
+        (i<6
+          ? '<div class="step-line '+(n<step?'done':'')+'"></div>'
+          : ''
+        );
+    }).join('')+
+  '</div>';
+
+  let body=
+    step===1 ? stepCategory(d,isTender) :
+    step===2 ? stepStructural(d) :
+    step===3 ? stepPricing(d) :
+    step===4 ? stepIdentity(d) :
+    step===5 ? stepProperty(d) :
+    step===6 ? stepDealPhotos(d) :
+    stepReview(d,isTender);
+
+  const guidance=PAGE_GUIDANCE[step];
+
+  return `
+    <div class="wizard-header">
+      <div class="wizard-kicker">
+        مرحله ${toFa(step)} از ۷
+      </div>
+
+      ${dots}
+
+      <div class="step-title">
+        ${(guidance?.[0] || WIZARD_STEPS[step-1])}
+      </div>
+
+      <div class="step-sub">
+        ${(guidance?.[1] || stepSub(step))}
+      </div>
+    </div>
+
+    ${body}
+
+    <div class="btn-row" style="margin-top:20px">
+
+      ${
+        step>1
+          ? `<button class="btn btn-outline" data-wiz="back-${prefix}">
+               مرحله قبل
+             </button>`
+          : ''
+      }
+
+      <button class="btn btn-outline" data-wiz="cancel-${prefix}">
+        لغو
+      </button>
+
+      ${
+        step<7
+          ? `<button class="btn btn-primary"
+               data-wiz="next-${prefix}"
+               ${can?'':'disabled'}>
+               مرحله بعد
+             </button>`
+          : `<button class="btn btn-primary"
+               data-wiz="submit-${prefix}"
+               ${can?'':'disabled'}>
+               ثبت نهایی
+             </button>`
+      }
+
+    </div>
+  `;
+}
 function startHeroCarousel(){const slides=document.querySelectorAll('[data-hero-slide]');if(!slides.length)return;let idx=0;carouselTimers.hero=setInterval(()=>{idx=(idx+1)%slides.length;slides.forEach((e,i)=>e.classList.toggle('show',i===idx));document.querySelectorAll('[data-hero-dot]').forEach((e,i)=>e.classList.toggle('on',i===idx))},6000);document.querySelectorAll('.hero-slide-copy').forEach(el=>{let drag=false,sx=0,sy=0,ox=0,oy=0;el.addEventListener('pointerdown',e=>{drag=true;sx=e.clientX;sy=e.clientY;el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointermove',e=>{if(!drag)return;el.style.transform='translate('+Math.max(-80,Math.min(80,ox+e.clientX-sx))+'px,'+Math.max(-35,Math.min(35,oy+e.clientY-sy))+'px)'});el.addEventListener('pointerup',()=>{drag=false;const m=(el.style.transform||'').match(/translate\(([-\d.]+)px,([-\d.]+)px/);if(m){ox=+m[1];oy=+m[2]}});el.addEventListener('pointercancel',()=>drag=false)})}
 function heroCarouselHtml(){const a=[['hero-art-house','⌂','ملک شما، با پرونده‌ای منظم','آگهی، مدارک و سابقه ملک را در یک مسیر مشخص ثبت کنید.'],['hero-art-map','⌖','ملک را روی نقشه پیدا کنید','موقعیت ملک را انتخاب کنید و آگهی‌های اطراف را ببینید.'],['hero-art-trust','✓','امنیت اطلاعات، قبل از معامله','مدارک هویتی و مالکیتی از آگهی عمومی جدا نگهداری می‌شوند.'],['hero-art-3d','◇','آینده: بازدید مجازی و 3D','برای آگهی‌های منتخب، امکان تور مجازی و نمای سه‌بعدی اضافه می‌شود.']];return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="trust-strip"><b>حریم خصوصی</b><span>مدارک شما برای آگهی عمومی نمایش داده نمی‌شود.</span></div><div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>مشاهده ملک‌ها روی نقشه</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>'}
 function renderBrowse(){
