@@ -42,6 +42,8 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        // F4: کیبورد نرم، محتوا را resize می‌کند و هنگام تایپ عدد بسته نمی‌شود
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.rgb(5,5,5));
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -72,6 +74,16 @@ public class MainActivity extends Activity {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri u = request.getUrl();
+                if ("tel".equalsIgnoreCase(u.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_DIAL, u)); }
+                    catch (ActivityNotFoundException ignored) {}
+                    return true;
+                }
+                if ("mailto".equalsIgnoreCase(u.getScheme()) || "sms".equalsIgnoreCase(u.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, u)); }
+                    catch (ActivityNotFoundException ignored) {}
+                    return true;
+                }
                 if ("http".equalsIgnoreCase(u.getScheme()) || "https".equalsIgnoreCase(u.getScheme())) {
                     String host = u.getHost();
                     if (APP_DOMAIN.equalsIgnoreCase(host) || "localhost".equalsIgnoreCase(host) ||
@@ -88,6 +100,17 @@ public class MainActivity extends Activity {
                 if (filePathCallback != null) filePathCallback.onReceiveValue(null);
                 filePathCallback = callback;
                 Intent intent = params.createIntent();
+                // F6: افزودن گزینه دوربین به انتخاب‌گر فایل
+                java.util.ArrayList<Intent> extraIntents = new java.util.ArrayList<>();
+                Intent camImg = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                if (camImg.resolveActivity(getPackageManager()) != null) extraIntents.add(camImg);
+                if (params.isCaptureEnabled() || acceptsVideo(params)) {
+                    Intent camVid = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
+                    if (camVid.resolveActivity(getPackageManager()) != null) extraIntents.add(camVid);
+                }
+                if (!extraIntents.isEmpty()) {
+                    intent.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Intent[0]));
+                }
                 try { startActivityForResult(intent, FILE_CHOOSER_REQ); }
                 catch (ActivityNotFoundException ex) { filePathCallback = null; callback.onReceiveValue(null); return false; }
                 return true;
@@ -162,6 +185,12 @@ public class MainActivity extends Activity {
             pendingOrigin = null;
             pendingCallback = null;
         }
+    }
+
+    private boolean acceptsVideo(WebChromeClient.FileChooserParams params) {
+        if (params == null || params.getAcceptTypes() == null) return false;
+        for (String t : params.getAcceptTypes()) if (t != null && t.startsWith("video/")) return true;
+        return false;
     }
 
     private String quote(String v) {
