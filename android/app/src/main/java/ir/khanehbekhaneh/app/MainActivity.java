@@ -2,6 +2,7 @@ package ir.khanehbekhaneh.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
@@ -103,11 +104,15 @@ public class MainActivity extends Activity {
             }
         });
 
-        ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(0, bars.top, 0, bars.bottom);
-            return insets;
-        });
+       ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
+    Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+    Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+    int bottom = Math.max(bars.bottom, ime.bottom);
+
+    v.setPadding(0, bars.top, 0, bottom);
+    return insets;
+       }); 
         ViewCompat.requestApplyInsets(webView);
         setContentView(webView);
         webView.loadUrl("https://" + APP_DOMAIN + "/www/index.html");
@@ -126,7 +131,17 @@ public class MainActivity extends Activity {
     }
 
     private void goBackOrFinish() {
-        if (webView != null && webView.canGoBack()) webView.goBack(); else finish();
+    if (webView != null && webView.canGoBack()) {
+        webView.goBack();
+        return;
+    }
+
+    new AlertDialog.Builder(this)
+            .setTitle("خروج از برنامه")
+            .setMessage("آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟")
+            .setNegativeButton("انصراف", null)
+            .setPositiveButton("خروج", (dialog, which) -> finish())
+            .show();
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
