@@ -7,6 +7,7 @@ const CATEGORIES = [
   {id:'rent_year', label:'خانه برای کرایه یک‌ساله', ic:'🏠', kind:'house', rent:true},
   {id:'rent_short', label:'خانه برای کرایه کوتاه‌مدت', ic:'🛎️', kind:'house', rent:true},
   {id:'sale_house', label:'خانه برای فروش', ic:'🔑', kind:'house', rent:false},
+  {id:'presale', label:'پیش‌فروش ساختمان (اقساطی)', ic:'🏗️', kind:'house', rent:false},
   {id:'land_residential', label:'زمین مسکونی برای ساخت‌وساز', ic:'📐', kind:'land', rent:false},
   {id:'land_agri_sale', label:'زمین کشاورزی برای فروش', ic:'🌱', kind:'land', rent:false},
   {id:'land_agri_rent', label:'زمین کشاورزی برای اجاره', ic:'🌾', kind:'land', rent:true},
@@ -163,8 +164,10 @@ function blankDraft(isTender){
     landInfo:{ area:'', landUse:'' },
     pricing:{ total:'', perMeter:'', deposit:'', monthly:'' },
     identity:{ national:null, birth:null, sana:null },
-    property:{ ownership:[], construction:[], permits:[] },
+    property:{ ownership:[], construction:[], permits:[], engineering:[] },
     dealPhotos:[],
+    agent:{name:'', photo:null},
+    visitAllowed:false,
     status:'draft', rejectReason:'', publishCode:'', contract:null, contractPercent:null,
     createdAt:null, __mine:false,
   };
@@ -239,6 +242,13 @@ function applyTheme(){
   document.documentElement.removeAttribute('data-theme');
   if(settings.theme==='dark') document.documentElement.setAttribute('data-theme','dark');
   if(settings.theme==='light') document.documentElement.setAttribute('data-theme','light');
+  /* F17: دکمه تم با آیکون بزرگ‌تر و توضیح وضعیت */
+  const tb=document.getElementById('themeBtn');
+  if(tb){
+    tb.textContent = settings.theme==='dark' ? '☀️' : settings.theme==='light' ? '🌙' : '🌗';
+    const lbl='حالت نمایش: '+(settings.theme==='dark'?'تیره (برای روشن لمس کنید)':settings.theme==='light'?'روشن (برای خودکار لمس کنید)':'خودکار (برای تیره لمس کنید)');
+    tb.title=lbl; tb.setAttribute('aria-label',lbl);
+  }
 }
 function haversine(lat1,lon1,lat2,lon2){
   const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
@@ -257,7 +267,19 @@ document.getElementById('themeBtn').addEventListener('click', ()=>{
 });
 document.getElementById('menuBtn').addEventListener('click', openDrawer);
 
-function startCardCarousels(){}
+function startCardCarousels(){
+  /* چرخش خودکار عکس‌های کارت آگهی (قبلاً پیاده‌سازی نشده بود) */
+  document.querySelectorAll('[data-card-slideshow]').forEach(box=>{
+    const imgs=box.querySelectorAll('img'); if(imgs.length<2) return;
+    const id=box.dataset.cardSlideshow; let i=0;
+    const dots=box.querySelectorAll('.dot-row span');
+    carouselTimers['card-'+id]=setInterval(()=>{
+      i=(i+1)%imgs.length;
+      imgs.forEach((im,k)=>im.classList.toggle('show',k===i));
+      dots.forEach((dt,k)=>dt.classList.toggle('on',k===i));
+    },4000);
+  });
+}
 
 /* ============================ رندر اصلی ============================ */
 function render(){
@@ -272,7 +294,7 @@ function render(){
   bindDynamicHandlers();
   startCardCarousels();
   startHeroCarousel();
-  view.scrollTop = 0;
+  if(!(state.tab==='post'||state.tab==='tenders')) view.scrollTop = 0;
 }
 
 /* ============================ کاروسل معرفی (بالای صفحه اصلی) ============================ */
@@ -356,12 +378,12 @@ function renderListingCard(l){
     <div class="card-body">
       <div class="listing-top">
         <div>
-          <div class="listing-title">${l.title}</div>
-          <div class="listing-loc">📍 ${countryLabel(l.country||'IR')} · ${l.province||''}${l.province?' · ':''}${l.city||''} <span>· ثبت‌شده ${fmtDate(l.createdAt)}</span></div>
+          <div class="listing-title">${escapeHtml(l.title)}</div>
+          <div class="listing-loc">📍 ${countryLabel(l.country||'IR')} · ${escapeHtml(l.province||'')}${l.province?' · ':''}${escapeHtml(l.city||'')} <span>· ثبت‌شده ${fmtDate(l.createdAt)}</span></div>
         </div>
         <span class="badge badge-cat">${catIcon(l.category)} ${catLabel(l.category)}</span>
       </div>
-      <div class="listing-desc">${l.desc||''}</div>
+      <div class="listing-desc">${escapeHtml(l.desc||'')}</div>
       <div class="meta-strip">
         ${l.structural.buildArea||l.landInfo.area? `<span>متراژ: ${toFa(l.structural.buildArea||l.landInfo.area)} م²</span>`:''}
         ${l.structural.rooms? `<span>${toFa(l.structural.rooms)} اتاق</span>`:''}
@@ -385,6 +407,7 @@ function priceSummary(l){
 
 function renderSpecialPropertyInfo(l){
   const a=l.structural?.agri||{}; const c=catInfo(l.category); let rows=[];
+  if(l.category==='presale'){const ps=l.structural?.presale||{};rows=[['پیشرفت فیزیکی',ps.progress?toFa(ps.progress)+'٪':''],['پیش‌پرداخت',ps.prepay?toFa(parseNum(ps.prepay).toLocaleString('en-US'))+' تومان':''],['اقساط',ps.installments?toFa(ps.installments)+' قسط':''],['موعد تحویل',ps.delivery||''],['سازنده',ps.builder||'']];}
   if(['land_agri_rent','land_agri_sale'].includes(l.category)) rows=[['نوع آب/کشت',a.irrigationType],['منبع آب',a.waterSource],['تعداد رایزر',a.riserCount],['تعداد پمپ',a.pumpCount],['آبیاری تحت فشار',a.pressureIrrigation?'دارد':'ندارد'],['ترانس اختصاصی',a.dedicatedTransformer?'دارد':'ندارد'],['کاهش پمپاژ فصلی',a.seasonalPumpReduction?'بله':'خیر'],['حق‌آبه/مجوز',a.waterRightDoc]];
   if(c.kind==='commercial') rows=[['نوع کاربری',l.structural?.commercialType],['عرض بر',l.structural?.storefrontWidth?l.structural.storefrontWidth+' متر':''],['ارتفاع سقف',l.structural?.ceilingHeight?l.structural.ceilingHeight+' متر':''],['مجوز/نوع فعالیت',l.structural?.businessLicense],['کنتور برق اختصاصی',l.structural?.dedicatedMeter?'دارد':'ندارد']];
   rows=rows.filter(x=>x[1]!==undefined&&x[1]!==''); return rows.length?rows.map(x=>`<div class="summary-row"><span class="k">${x[0]}</span><span class="v">${x[1]}</span></div>`).join(''):'اطلاعات اختصاصی تکمیل نشده است.';
@@ -396,8 +419,8 @@ function renderListingDetail(l){
     <div class="back-row" data-back="browse">→ بازگشت به فهرست</div>
     <div class="detail-hero">
       <span class="badge badge-cat" style="background:rgba(255,255,255,.18); color:#fff;">${catIcon(l.category)} ${catLabel(l.category)}</span>
-      <h2 style="margin-top:10px; font-size:18px;">${l.title}</h2>
-      <div style="font-size:12.5px; opacity:.85;">📍 ${l.province} · ${l.city} · ثبت‌شده ${fmtDate(l.createdAt)}</div>
+      <h2 style="margin-top:10px; font-size:18px;">${escapeHtml(l.title)}</h2>
+      <div style="font-size:12.5px; opacity:.85;">📍 ${escapeHtml(l.province||'')} · ${escapeHtml(l.city||'')} · ثبت‌شده ${fmtDate(l.createdAt)}</div>
     </div>
     ${photos.length ? `<div class="thumb-grid">${photos.map(p=>`<div class="thumb"><img src="${p}"></div>`).join('')}</div>` :
       `<div class="empty-state" style="padding:24px;"><div class="ic">🖼️</div><div>برای این آگهی عکسی ثبت نشده است.</div></div>`}
@@ -436,13 +459,34 @@ function renderListingDetail(l){
     </div>`:''}
 
     <div class="section-title">توضیحات</div>
-    <p class="muted">${l.desc||'توضیحی ثبت نشده است.'}</p>
+    <p class="muted">${escapeHtml(l.desc||'توضیحی ثبت نشده است.')}</p>
     ${l.postalCode? `<p class="muted">کدپستی: ${toFa(l.postalCode)}</p>`:''}
     <div class="section-title">قیمت</div>
     <div class="listing-price">${priceSummary(l)}</div>
     ${cat.rent && parseNum(l.pricing.deposit) ? `<div class="muted">مبلغ بیعانه به حروف: ${numberToWordsFa(l.pricing.deposit)}</div>`:''}
     ${cat.rent && parseNum(l.pricing.monthly) ? `<div class="muted">اجاره ماهانه به حروف: ${numberToWordsFa(l.pricing.monthly)}</div>`:''}
     ${!cat.rent && parseNum(l.pricing.total) ? `<div class="muted">مبلغ کل به حروف: ${numberToWordsFa(l.pricing.total)}</div>`:''}
+
+    ${(()=>{const h=renderSpecialPropertyInfo(l); return h!=='اطلاعات اختصاصی تکمیل نشده است.'? `<div class="section-title">اطلاعات اختصاصی</div><div class="filter-card">${h}</div>`:'';})()}
+
+    ${(l.agent&&(l.agent.name||l.agent.photo))? `
+    <div class="section-title">👤 کارشناس فروش</div>
+    <div class="agent-card">
+      <div class="agent-avatar">${l.agent.photo?`<img src="${l.agent.photo}" alt="کارشناس فروش">`:'👤'}</div>
+      <div class="agent-info">
+        <b>${escapeHtml(l.agent.name||'کارشناس فروش')}</b>
+        <small>ثبت‌کننده و کارشناس فروش این آگهی</small>
+        <div class="agent-stars">${agentStars(l)}</div>
+      </div>
+    </div>`:''}
+
+    ${(l.property?.engineering||[]).length? `<div class="info-box" style="background:var(--success-tint);color:var(--success);">✔️ این ملک دارای تاییدیه نظام مهندسی ثبت‌شده در پرونده است.</div>`:''}
+    <div class="muted" style="margin:4px 0 10px;">بازدید حضوری: ${l.visitAllowed?'✅ فروشنده اجازه بازدید از ملک را می‌دهد':'⛔ فروشنده اجازه بازدید حضوری نداده است'}</div>
+
+    <div class="reaction-row">
+      <button class="btn btn-outline btn-sm" data-like="${l.id}">👍 پسندیدن (${toFa(reactionCounts(l).like||0)})</button>
+      <button class="btn btn-outline btn-sm" data-dislike="${l.id}">👎 نپسندیدن (${toFa(reactionCounts(l).dislike||0)})</button>
+    </div>
 
     <div class="info-box" style="margin-top:18px;">
       کد انتشار این آگهی: <b>${l.publishCode||'—'}</b><br>
@@ -452,6 +496,9 @@ function renderListingDetail(l){
       <button class="btn btn-primary" data-contact="${l.id}">💬 گفتگو با آگهی‌دهنده</button>
       <button class="btn btn-secondary" data-call="${l.id}">📞 تماس</button>
     </div>
+    <a href="https://www.google.com/search?q=${encodeURIComponent((l.title||'ملک')+' '+(l.city||'')+' '+(l.province||''))}" target="_blank" rel="noopener" style="text-decoration:none;">
+      <button class="btn btn-outline" style="margin-top:8px;">🔎 جستجوی موارد مشابه در گوگل و سایت‌های املاک</button>
+    </a>
   `;
 }
 
@@ -569,16 +616,16 @@ function stepStructural(d){
   if(cat.kind==='house'){
     return `
       <div class="checkbox-row"><input type="checkbox" id="sFurnished" ${d.structural.furnished?'checked':''}><label for="sFurnished">این ملک مبله اجاره/فروش می‌رود</label></div>
-      <div class="filter-row"><div><label class="field-label">سال ساخت</label><input type="number" id="sYear" value="${d.structural.yearBuilt}"></div>
-      <div><label class="field-label">تعداد اتاق</label><input type="number" id="sRooms" value="${d.structural.rooms}"></div></div>
-      <div class="filter-row"><div><label class="field-label">متراژ عرصه (م²)</label><input type="number" id="sLand" value="${d.structural.landArea}"></div>
-      <div><label class="field-label">متراژ اعیان (م²)</label><input type="number" id="sBuild" value="${d.structural.buildArea}"></div></div>
-      <div class="filter-row"><div><label class="field-label">متراژ تراس (م²)</label><input type="number" id="sTerrace" value="${d.structural.terrace}"></div>
-      <div><label class="field-label">طبقه</label><input type="number" id="sFloor" value="${d.structural.floor}"></div></div>
-      <div class="filter-row"><div><label class="field-label">متراژ پارکینگ (م²)</label><input type="number" id="sParking" value="${d.structural.parking}"></div>
-      <div><label class="field-label">متراژ انباری (م²)</label><input type="number" id="sStorage" value="${d.structural.storage}"></div></div>
+      <div class="filter-row"><div><label class="field-label">سال ساخت</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sYear" value="${d.structural.yearBuilt}"></div>
+      <div><label class="field-label">تعداد اتاق</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sRooms" value="${d.structural.rooms}"></div></div>
+      <div class="filter-row"><div><label class="field-label">متراژ عرصه (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sLand" value="${d.structural.landArea}"></div>
+      <div><label class="field-label">متراژ اعیان (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sBuild" value="${d.structural.buildArea}"></div></div>
+      <div class="filter-row"><div><label class="field-label">متراژ تراس (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sTerrace" value="${d.structural.terrace}"></div>
+      <div><label class="field-label">طبقه</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sFloor" value="${d.structural.floor}"></div></div>
+      <div class="filter-row"><div><label class="field-label">متراژ پارکینگ (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sParking" value="${d.structural.parking}"></div>
+      <div><label class="field-label">متراژ انباری (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sStorage" value="${d.structural.storage}"></div></div>
       <label class="field-label">متراژ سرویس بهداشتی/حمام (م²)</label>
-      <input type="number" id="sBathArea" value="${d.structural.bathArea}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="sBathArea" value="${d.structural.bathArea}">
       ${propPhotoBlock('bathPhotos','عکس سرویس بهداشتی و حمام', d.structural.bathPhotos)}
       <label class="field-label">کدپستی واحد مسکونی (اختیاری)</label>
       <input type="text" id="sPostal" value="${d.postalCode}" placeholder="۱۰ رقم">
@@ -598,10 +645,10 @@ function stepStructural(d){
       ${propPhotoBlock('heatingPhotos','عکس وسایل گرمایشی', d.structural.heatingPhotos)}
 
       <label class="field-label">متراژ استخر (م²) — در صورت وجود</label>
-      <input type="number" id="sPoolArea" value="${d.structural.poolArea}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="sPoolArea" value="${d.structural.poolArea}">
       ${propPhotoBlock('poolPhotos','عکس استخر', d.structural.poolPhotos)}
       <label class="field-label">متراژ گلخانه (م²) — در صورت وجود</label>
-      <input type="number" id="sGreenhouseArea" value="${d.structural.greenhouseArea}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="sGreenhouseArea" value="${d.structural.greenhouseArea}">
       ${propPhotoBlock('greenhousePhotos','عکس گلخانه', d.structural.greenhousePhotos)}
 
       ${propPhotoBlock('cabinetryPhotos','عکس کابینت‌کاری', d.structural.cabinetryPhotos)}
@@ -614,7 +661,7 @@ function stepStructural(d){
 
       <label class="field-label">معبر</label>
       <div class="filter-row">
-        <div><input type="number" id="sRoadWidth" value="${d.structural.accessRoadWidth}" placeholder="عرض معبر (متر)"></div>
+        <div><input type="text" inputmode="numeric" pattern="[0-9]*" id="sRoadWidth" value="${d.structural.accessRoadWidth}" placeholder="عرض معبر (متر)"></div>
         <div><select id="sRoadType"><option value="">نوع معبر</option>${ROAD_TYPES.map(t=>`<option value="${t}" ${d.structural.accessRoadType===t?'selected':''}>${t}</option>`).join('')}</select></div>
       </div>
 
@@ -623,27 +670,36 @@ function stepStructural(d){
       <textarea id="sStrengthOther" rows="2" placeholder="سایر نقاط قوت (اختیاری)">${d.structural.strengthOther}</textarea>
       <label class="field-label">انتظارات مالک از اجاره‌گیرنده / استفاده‌کننده</label>
       <textarea id="sOwnerExpectations" rows="4" maxlength="2000" placeholder="مثلاً حفظ کابینت و تجهیزات، رعایت ساعات سکوت، عدم ایجاد مزاحمت برای همسایه‌ها و ...">${d.structural.ownerExpectations||''}</textarea>
+      ${d.category==='presale'? `
+      <div class="section-title" style="margin-top:14px">🏗️ شرایط پیش‌فروش ساختمان</div>
+      <div class="filter-row"><div><label class="field-label">پیشرفت فیزیکی (٪)</label><input type="text" inputmode="numeric" id="sPsProgress" value="${d.structural.presale?.progress||''}"></div>
+      <div><label class="field-label">مبلغ پیش‌پرداخت (تومان)</label><input type="text" inputmode="numeric" id="sPsPrepay" value="${d.structural.presale?.prepay||''}"></div></div>
+      <div class="filter-row"><div><label class="field-label">تعداد اقساط</label><input type="text" inputmode="numeric" id="sPsInst" value="${d.structural.presale?.installments||''}"></div>
+      <div><label class="field-label">موعد تحویل</label><input type="text" id="sPsDelivery" value="${d.structural.presale?.delivery||''}" placeholder="مثلاً: تابستان ۱۴۰۶"></div></div>
+      <label class="field-label">سازنده / شرکت ساختمانی</label><input type="text" id="sPsBuilder" value="${d.structural.presale?.builder||''}">
+      <div class="field-hint">پیش‌فروش باید دارای پروانه ساخت و در صورت انجام معامله، قولنامه رسمی باشد.</div>
+      `:''}
     `;
   }
   if(cat.kind==='land'){
     const agri = d.structural.agri || {};
     const isAgri = ['land_agri_rent','land_agri_sale'].includes(d.category);
     return `
-      <label class="field-label">متراژ زمین (م²)</label><input type="number" id="sLandArea2" value="${d.landInfo.area}">
+      <label class="field-label">متراژ زمین (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sLandArea2" value="${d.landInfo.area}">
       <label class="field-label">کاربری زمین</label><input type="text" id="sLandUse" value="${d.landInfo.landUse}" placeholder="مثلاً: مسکونی / کشاورزی آبی / باغ">
       ${isAgri ? `
         <div class="section-title" style="margin-top:14px">مشخصات فنی زمین کشاورزی</div>
         <label class="field-label">نوع کشت و آب</label>
         <select id="sAgriIrrigation"><option value="">انتخاب کنید</option><option value="دیم" ${agri.irrigationType==='دیم'?'selected':''}>دیم</option><option value="آبی" ${agri.irrigationType==='آبی'?'selected':''}>آبی</option><option value="مختلط" ${agri.irrigationType==='مختلط'?'selected':''}>مختلط</option></select>
         <label class="field-label">منبع آب</label><input type="text" id="sWaterSource" value="${agri.waterSource||''}" placeholder="چاه، قنات، رودخانه، شبکه آب و ...">
-        <div class="filter-row"><div><label class="field-label">تعداد رایزر</label><input type="number" id="sRiserCount" value="${agri.riserCount||''}"></div><div><label class="field-label">تعداد پمپ</label><input type="number" id="sPumpCount" value="${agri.pumpCount||''}"></div></div>
+        <div class="filter-row"><div><label class="field-label">تعداد رایزر</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sRiserCount" value="${agri.riserCount||''}"></div><div><label class="field-label">تعداد پمپ</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sPumpCount" value="${agri.pumpCount||''}"></div></div>
         <div class="checkbox-row"><input type="checkbox" id="sPressureIrrigation" ${agri.pressureIrrigation?'checked':''}><label for="sPressureIrrigation">آبیاری تحت فشار</label></div>
         <div class="checkbox-row"><input type="checkbox" id="sDedicatedTransformer" ${agri.dedicatedTransformer?'checked':''}><label for="sDedicatedTransformer">ترانس برق اختصاصی</label></div>
         <div class="checkbox-row"><input type="checkbox" id="sSeasonalPumpReduction" ${agri.seasonalPumpReduction?'checked':''}><label for="sSeasonalPumpReduction">کاهش تعداد/ظرفیت پمپاژ رایزرها در طول فصل یا با افت سطح آب</label></div>
         <label class="field-label">توضیح وضعیت حق‌آبه/مجوز آب</label><textarea id="sWaterRightDoc" rows="2" placeholder="مثلاً تعداد ساعت آب، میزان حق‌آبه یا شماره مجوز">${agri.waterRightDoc||''}</textarea>
       `:''}
       <label class="field-label">کدپستی (در صورت وجود)</label><input type="text" id="sPostal2" value="${d.postalCode}">
-      <label class="field-label">معبر</label><div class="filter-row"><div><input type="number" id="sRoadWidth" value="${d.structural.accessRoadWidth}" placeholder="عرض معبر (متر)"></div><div><select id="sRoadType"><option value="">نوع معبر</option>${ROAD_TYPES.map(t=>`<option value="${t}" ${d.structural.accessRoadType===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+      <label class="field-label">معبر</label><div class="filter-row"><div><input type="text" inputmode="numeric" pattern="[0-9]*" id="sRoadWidth" value="${d.structural.accessRoadWidth}" placeholder="عرض معبر (متر)"></div><div><select id="sRoadType"><option value="">نوع معبر</option>${ROAD_TYPES.map(t=>`<option value="${t}" ${d.structural.accessRoadType===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
       <label class="field-label">نقاط قوت ملک</label>${multiSelectBlock('strength', STRENGTH_OPTIONS, d.structural.strengthTags)}<textarea id="sStrengthOther" rows="2" placeholder="سایر نقاط قوت (اختیاری)">${d.structural.strengthOther}</textarea>
       <label class="field-label">انتظارات مالک از استفاده‌کننده / مستأجر</label><textarea id="sOwnerExpectations" rows="4" maxlength="2000" placeholder="مثلاً حفظ تجهیزات، رعایت ساعات سکوت، عدم ایجاد مزاحمت برای همسایه‌ها و ...">${d.structural.ownerExpectations||''}</textarea>
     `;
@@ -652,12 +708,12 @@ function stepStructural(d){
     const st=d.structural, subtype=cat.subtype||'';
     const isWarehouse=subtype==='warehouse', isWorkshop=subtype==='workshop', isIndustrial=d.category==='industrial';
     return `
-      <label class="field-label">متراژ ملک (م²)</label><input type="number" id="sLandArea3" value="${d.landInfo.area}">
-      <div class="filter-row"><div><label class="field-label">نوع کاربری</label><input type="text" id="sCommercialType" value="${st.commercialType||''}" placeholder="مغازه، دفتر، انبار، کارگاه..."></div><div><label class="field-label">عرض بر (متر)</label><input type="number" id="sStorefrontWidth" value="${st.storefrontWidth||''}"></div></div>
-      <div class="filter-row"><div><label class="field-label">ارتفاع سقف (متر)</label><input type="number" id="sCeilingHeight" value="${st.ceilingHeight||''}"></div><div><label class="field-label">نوع فعالیت / مجوز</label><input type="text" id="sBusinessLicense" value="${st.businessLicense||''}"></div></div>
+      <label class="field-label">متراژ ملک (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sLandArea3" value="${d.landInfo.area}">
+      <div class="filter-row"><div><label class="field-label">نوع کاربری</label><input type="text" id="sCommercialType" value="${st.commercialType||''}" placeholder="مغازه، دفتر، انبار، کارگاه..."></div><div><label class="field-label">عرض بر (متر)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sStorefrontWidth" value="${st.storefrontWidth||''}"></div></div>
+      <div class="filter-row"><div><label class="field-label">ارتفاع سقف (متر)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sCeilingHeight" value="${st.ceilingHeight||''}"></div><div><label class="field-label">نوع فعالیت / مجوز</label><input type="text" id="sBusinessLicense" value="${st.businessLicense||''}"></div></div>
       ${isWarehouse||isWorkshop||isIndustrial ? `<div class="section-title" style="margin-top:14px">مشخصات تخصصی ${isWarehouse?'انبار':isWorkshop?'کارگاه':'ملک صنعتی'}</div>
-        <div class="filter-row"><div><label class="field-label">مساحت محوطه (م²)</label><input type="number" id="sYardArea" value="${st.yardArea||''}"></div><div><label class="field-label">دسترسی بارگیری</label><input type="text" id="sLoadingAccess" value="${st.loadingAccess||''}" placeholder="کامیون، تریلی، رمپ و ..."></div></div>
-        ${isIndustrial||isWorkshop?`<div class="filter-row"><div><label class="field-label">قدرت برق صنعتی (کیلووات)</label><input type="number" id="sIndustrialPower" value="${st.industrialPower||''}"></div><div class="checkbox-row"><input type="checkbox" id="sThreePhase" ${st.threePhase?'checked':''}><label for="sThreePhase">برق سه‌فاز</label></div></div>`:''}
+        <div class="filter-row"><div><label class="field-label">مساحت محوطه (م²)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sYardArea" value="${st.yardArea||''}"></div><div><label class="field-label">دسترسی بارگیری</label><input type="text" id="sLoadingAccess" value="${st.loadingAccess||''}" placeholder="کامیون، تریلی، رمپ و ..."></div></div>
+        ${isIndustrial||isWorkshop?`<div class="filter-row"><div><label class="field-label">قدرت برق صنعتی (کیلووات)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sIndustrialPower" value="${st.industrialPower||''}"></div><div class="checkbox-row"><input type="checkbox" id="sThreePhase" ${st.threePhase?'checked':''}><label for="sThreePhase">برق سه‌فاز</label></div></div>`:''}
         ${isWarehouse||isWorkshop?`<div class="checkbox-row"><input type="checkbox" id="sVentilation" ${st.ventilation?'checked':''}><label for="sVentilation">تهویه مناسب</label></div>`:''}
         ${isWorkshop?`<div class="checkbox-row"><input type="checkbox" id="sCrane" ${st.crane?'checked':''}><label for="sCrane">جرثقیل سقفی / دروازه‌ای</label></div>`:''}`:''}
       <div class="checkbox-row"><input type="checkbox" id="sDedicatedMeter" ${st.dedicatedMeter?'checked':''}><label for="sDedicatedMeter">کنتور اختصاصی برق</label></div>
@@ -666,7 +722,7 @@ function stepStructural(d){
       <label class="field-label">انتظارات مالک از استفاده‌کننده / مستأجر</label><textarea id="sOwnerExpectations" rows="4" maxlength="2000" placeholder="شرایط استفاده، حفظ تجهیزات، ساعات کاری، محدودیت فعالیت و ...">${st.ownerExpectations||''}</textarea>
     `;
   }
-  return `<label class="field-label">متراژ تقریبی (م²) — اختیاری</label><input type="number" id="sLandArea3" value="${d.landInfo.area}">
+  return `<label class="field-label">متراژ تقریبی (م²) — اختیاری</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="sLandArea3" value="${d.landInfo.area}">
     <div class="field-hint">برای پروژه‌های مشارکتی یا سایر موارد، پر کردن این بخش اختیاری است.</div>`;
 }
 function propPhotoBlock(key,label,arr,max){
@@ -685,21 +741,21 @@ function stepPricing(d){
   return `
     ${cat.rent? `
       <label class="field-label">مبلغ بیعانه/رهن (تومان)</label>
-      <input type="number" id="pDeposit" value="${d.pricing.deposit}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="pDeposit" value="${d.pricing.deposit}">
       <div class="words-hint">${d.pricing.deposit? numberToWordsFa(d.pricing.deposit) : 'به حروف اینجا نمایش داده می‌شود'}</div>
       <label class="field-label">اجاره ماهانه (تومان)</label>
-      <input type="number" id="pMonthly" value="${d.pricing.monthly}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="pMonthly" value="${d.pricing.monthly}">
       <div class="words-hint">${d.pricing.monthly? numberToWordsFa(d.pricing.monthly) : 'به حروف اینجا نمایش داده می‌شود'}</div>
     ` : `
       <label class="field-label">مبلغ کل (تومان)</label>
-      <input type="number" id="pTotal" value="${d.pricing.total}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="pTotal" value="${d.pricing.total}">
       <div class="words-hint">${d.pricing.total? numberToWordsFa(d.pricing.total) : 'به حروف اینجا نمایش داده می‌شود'}</div>
       <label class="field-label">قیمت هر متر (تومان) — اختیاری</label>
-      <input type="number" id="pPerMeter" value="${d.pricing.perMeter}">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="pPerMeter" value="${d.pricing.perMeter}">
       <div class="words-hint">${d.pricing.perMeter? numberToWordsFa(d.pricing.perMeter) : 'به حروف اینجا نمایش داده می‌شود'}</div>
     `}
     <label class="field-label">شماره تماس متقاضی</label>
-    <input type="tel" id="pPhone" value="${d.phone}" placeholder="۰۹xxxxxxxxx">
+    <input type="tel" inputmode="tel" id="pPhone" value="${d.phone}" placeholder="۰۹xxxxxxxxx">
     <label class="field-label">پاسخگویی تماس‌ها</label>
     <div class="cat-grid">
       <div class="cat-chip ${d.answerMode==='self'?'active':''}" data-setanswer="self"><span class="ic">🙋</span><span>خودم پاسخگو هستم</span></div>
@@ -1074,8 +1130,15 @@ function bindDynamicHandlers(){
   view.querySelectorAll('[data-fcat]').forEach(el=>el.addEventListener('click', ()=>{ const v=el.dataset.fcat; state.browse.category = state.browse.category===v? '' : v; render(); }));
   view.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click', ()=>{ state.browse.detailId=el.dataset.open; render(); }));
   const backBrowse=view.querySelector('[data-back="browse"]'); if(backBrowse) backBrowse.addEventListener('click', ()=>{ state.browse.detailId=null; render(); });
-  const contactBtn=view.querySelector('[data-contact]'); if(contactBtn) contactBtn.addEventListener('click', ()=> toast('گفتگو با آگهی‌دهنده آغاز شد. (شبیه‌سازی چت)'));
-  const callBtn=view.querySelector('[data-call]'); if(callBtn) callBtn.addEventListener('click', ()=> toast('درخواست تماس ثبت شد — بر اساس تنظیم آگهی‌دهنده، تماس گرفته می‌شود. (شبیه‌سازی)'));
+  const contactBtn=view.querySelector('[data-contact]'); if(contactBtn) contactBtn.addEventListener('click', ()=> openChat(contactBtn.dataset.contact));
+  const callBtn=view.querySelector('[data-call]'); if(callBtn) callBtn.addEventListener('click', ()=>{
+    const l=listings.find(x=>x.id===callBtn.dataset.call);
+    const ph=((l&&l.phone)||'').replace(/[^\d+]/g,'');
+    if(!ph){ toast('شماره تماس برای این آگهی ثبت نشده است.'); return; }
+    window.location.href='tel:'+ph;
+  });
+  document.querySelectorAll('[data-like]').forEach(el=>el.addEventListener('click', ev=>{ ev.stopPropagation(); setReaction(el.dataset.like,'like'); toast('به علاقه‌مندی‌های شما اضافه شد.'); render(); }));
+  document.querySelectorAll('[data-dislike]').forEach(el=>el.addEventListener('click', ev=>{ ev.stopPropagation(); setReaction(el.dataset.dislike,'dislike'); render(); }));
 
   // ---- Wizard: step 1 ----
   const dOrg=document.getElementById('dOrg'); if(dOrg) dOrg.addEventListener('input', e=>{ getDraft(isTenderScreen).orgName=e.target.value; refreshNextBtn(isTenderScreen); });
@@ -1100,7 +1163,8 @@ function bindDynamicHandlers(){
   bindNum('sBathArea','structural.bathArea',isTenderScreen); bindText('sPostal','postalCode',isTenderScreen);
   bindNum('sPoolArea','structural.poolArea',isTenderScreen); bindNum('sGreenhouseArea','structural.greenhouseArea',isTenderScreen);
   bindNum('sRoadWidth','structural.accessRoadWidth',isTenderScreen); bindText('sRoadType','structural.accessRoadType',isTenderScreen);
-  bindText('sStrengthOther','structural.strengthOther',isTenderScreen); bindText('sOwnerExpectations','structural.ownerExpectations',isTenderScreen); bindText('sCommercialType','structural.commercialType',isTenderScreen); bindText('sStorefrontWidth','structural.storefrontWidth',isTenderScreen); bindText('sCeilingHeight','structural.ceilingHeight',isTenderScreen); bindText('sBusinessLicense','structural.businessLicense',isTenderScreen); bindText('sYardArea','structural.yardArea',isTenderScreen); bindText('sLoadingAccess','structural.loadingAccess',isTenderScreen); bindText('sIndustrialPower','structural.industrialPower',isTenderScreen);
+  bindText('sStrengthOther','structural.strengthOther',isTenderScreen); bindText('sOwnerExpectations','structural.ownerExpectations',isTenderScreen);
+  bindText('sPsProgress','structural.presale.progress',isTenderScreen); bindText('sPsPrepay','structural.presale.prepay',isTenderScreen); bindText('sPsInst','structural.presale.installments',isTenderScreen); bindText('sPsDelivery','structural.presale.delivery',isTenderScreen); bindText('sPsBuilder','structural.presale.builder',isTenderScreen); bindText('sCommercialType','structural.commercialType',isTenderScreen); bindText('sStorefrontWidth','structural.storefrontWidth',isTenderScreen); bindText('sCeilingHeight','structural.ceilingHeight',isTenderScreen); bindText('sBusinessLicense','structural.businessLicense',isTenderScreen); bindText('sYardArea','structural.yardArea',isTenderScreen); bindText('sLoadingAccess','structural.loadingAccess',isTenderScreen); bindText('sIndustrialPower','structural.industrialPower',isTenderScreen);
   bindText('sAgriIrrigation','structural.agri.irrigationType',isTenderScreen); bindText('sWaterSource','structural.agri.waterSource',isTenderScreen); bindText('sRiserCount','structural.agri.riserCount',isTenderScreen); bindText('sPumpCount','structural.agri.pumpCount',isTenderScreen); bindText('sWaterRightDoc','structural.agri.waterRightDoc',isTenderScreen);
   bindText('sLandArea2','landInfo.area',isTenderScreen); bindText('sLandUse','landInfo.landUse',isTenderScreen); bindText('sPostal2','postalCode',isTenderScreen);
   bindText('sLandArea3','landInfo.area',isTenderScreen);
@@ -1123,7 +1187,7 @@ function bindDynamicHandlers(){
   view.querySelectorAll('[data-structfile]').forEach(el=>el.addEventListener('change', e=>{
     const key=el.dataset.structfile; const max=parseInt(el.dataset.structmax)||4;
     const arr = getDraft(isTenderScreen).structural[key];
-    const files=Array.from(e.target.files||[]); const slotsLeft=max-arr.length;
+    const files=Array.from(e.target.files||[]); e.target.value=''; const slotsLeft=max-arr.length;
     const toAdd=files.slice(0,slotsLeft); if(files.length>slotsLeft) toast('حداکثر '+toFa(max)+' عکس مجاز است.');
     let remaining=toAdd.length; if(remaining===0){ render(); return; }
     toAdd.forEach(f=>fileToThumb(f,480,dataUrl=>{ arr.push(dataUrl); remaining--; if(remaining===0) render(); }));
@@ -1135,23 +1199,31 @@ function bindDynamicHandlers(){
   bindNumWords('pTotal','pricing.total',isTenderScreen); bindNumWords('pPerMeter','pricing.perMeter',isTenderScreen);
   const pPhone=document.getElementById('pPhone'); if(pPhone) pPhone.addEventListener('input', e=>{ getDraft(isTenderScreen).phone=e.target.value; refreshNextBtn(isTenderScreen); });
   view.querySelectorAll('[data-setanswer]').forEach(el=>el.addEventListener('click', ()=>{ getDraft(isTenderScreen).answerMode=el.dataset.setanswer; render(); }));
+  const pv=document.getElementById('pVisitAllow'); if(pv) pv.addEventListener('change', e=>{ getDraft(isTenderScreen).visitAllowed=e.target.checked; });
 
   // ---- Wizard: step 4 identity ----
   view.querySelectorAll('[data-idfile]').forEach(el=>el.addEventListener('change', e=>{
-    const key=el.dataset.idfile; const file=e.target.files[0]; if(!file) return;
+    const key=el.dataset.idfile; const file=e.target.files[0]; if(!file) return; e.target.value='';
     fileToThumb(file,480,dataUrl=>{ getDraft(isTenderScreen).identity[key]=dataUrl; render(); });
+  }));
+
+  // ---- F14: agent profile ----
+  const an=document.getElementById('dAgentName'); if(an) an.addEventListener('input', e=>{ const dr=getDraft(isTenderScreen); dr.agent=dr.agent||{name:'',photo:null}; dr.agent.name=e.target.value; });
+  view.querySelectorAll('[data-agentfile]').forEach(el=>el.addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return; e.target.value='';
+    fileToThumb(file,480,dataUrl=>{ const dr=getDraft(isTenderScreen); dr.agent=dr.agent||{name:'',photo:null}; dr.agent.photo=dataUrl; render(); });
   }));
 
   // ---- Wizard: step 5 property docs ----
   view.querySelectorAll('[data-propfile]').forEach(el=>el.addEventListener('change', e=>{
-    const key=el.dataset.propfile; const files=Array.from(e.target.files||[]); let remaining=files.length;
+    const key=el.dataset.propfile; const files=Array.from(e.target.files||[]); e.target.value=''; let remaining=files.length;
     files.forEach(f=>fileToThumb(f,480,dataUrl=>{ getDraft(isTenderScreen).property[key].push(dataUrl); remaining--; if(remaining===0) render(); }));
   }));
   view.querySelectorAll('[data-rmprop]').forEach(el=>el.addEventListener('click', ()=>{ const [key,idx]=el.dataset.rmprop.split(':'); getDraft(isTenderScreen).property[key].splice(+idx,1); render(); }));
 
   // ---- Wizard: step 6 deal photos ----
   const dealInput=document.getElementById('dealFileInput'); if(dealInput) dealInput.addEventListener('change', e=>{
-    const d=getDraft(isTenderScreen); const files=Array.from(e.target.files||[]); const slotsLeft=8-d.dealPhotos.length;
+    const d=getDraft(isTenderScreen); const files=Array.from(e.target.files||[]); e.target.value=''; const slotsLeft=8-d.dealPhotos.length;
     const toAdd=files.slice(0,slotsLeft); if(files.length>slotsLeft) toast('حداکثر ۸ عکس مجاز است.');
     let remaining=toAdd.length; if(remaining===0) return;
     toAdd.forEach(f=>fileToThumb(f,480,dataUrl=>{ d.dealPhotos.push(dataUrl); remaining--; if(remaining===0) render(); }));
@@ -1163,6 +1235,7 @@ function bindDynamicHandlers(){
     const isT = prefix==='t';
     const next=view.querySelector(`[data-wiz="next-${prefix}"]`); if(next) next.addEventListener('click', ()=>{ (isT?state.tenders:state.post).step++; render(); });
     const back=view.querySelector(`[data-wiz="back-${prefix}"]`); if(back) back.addEventListener('click', ()=>{ (isT?state.tenders:state.post).step--; render(); });
+    const cancel=view.querySelector(`[data-wiz="cancel-${prefix}"]`); if(cancel) cancel.addEventListener('click', ()=> cancelWizard(isT));
     const submit=view.querySelector(`[data-wiz="submit-${prefix}"]`); if(submit) submit.addEventListener('click', ()=> submitEntry(isT));
     const goto=view.querySelector(`[data-goto="mine-${prefix}"]`); if(goto) goto.addEventListener('click', e=>{ e.preventDefault(); (isT?state.tenders:state.post).screen='mine'; render(); });
     const backFresh=view.querySelector(`[data-back="fresh-${isT?'tender':'post'}"]`); if(backFresh) backFresh.addEventListener('click', ()=>{
@@ -1283,6 +1356,15 @@ function openContractModal(l){
   });
 }
 
+/* F7: انصراف از ثبت آگهی/مناقصه */
+function cancelWizard(isTender){
+  if(!confirm('انصراف از ثبت؟ اطلاعات این پیش‌نویس پاک می‌شود و به صفحه قبل برمی‌گردید.')) return;
+  const st = isTender? state.tenders : state.post;
+  st.draft=blankDraft(isTender); st.step=1; st.screen='wizard';
+  state.tab = isTender? 'tenders':'browse';
+  render();
+}
+
 function submitEntry(isTender){
   const st = isTender? state.tenders : state.post;
   const d = st.draft;
@@ -1299,7 +1381,7 @@ function submitEntry(isTender){
 /* ============================ نسخه ارتقایافته 0.2 ============================ */
 const APP_CONFIG={version:'0.7.2',apiBaseUrl:window.KHB_API_BASE||'',paymentGatewayUrl:'',maxImageBytes:900*1024,imageMaxWidth:1600,maxDealPhotos:8};
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-function ensureDraftShape(d){d=d||blankDraft(false);d.country=d.country||'IR';d.location=d.location||{lat:null,lng:null,source:null,accuracy:null};d.payment=d.payment||{representative:false,status:'not_started',amount:0,authority:null};d.structural=d.structural||{};d.structural.agri=d.structural.agri||{irrigationType:'',waterSource:'',riserCount:'',pressureIrrigation:false,dedicatedTransformer:false,pumpCount:'',seasonalPumpReduction:false,waterRightDoc:''};d.structural.ownerExpectations=d.structural.ownerExpectations||'';d.structural.commercialType=d.structural.commercialType||'';d.structural.storefrontWidth=d.structural.storefrontWidth||'';d.structural.ceilingHeight=d.structural.ceilingHeight||'';d.structural.businessLicense=d.structural.businessLicense||'';d.structural.yardArea=d.structural.yardArea||'';d.structural.loadingAccess=d.structural.loadingAccess||'';d.structural.industrialPower=d.structural.industrialPower||'';d.structural.threePhase=!!d.structural.threePhase;d.structural.crane=!!d.structural.crane;d.structural.ventilation=!!d.structural.ventilation;return d;}
+function ensureDraftShape(d){d=d||blankDraft(false);d.country=d.country||'IR';d.location=d.location||{lat:null,lng:null,source:null,accuracy:null};d.payment=d.payment||{representative:false,status:'not_started',amount:0,authority:null};d.structural=d.structural||{};d.structural.agri=d.structural.agri||{irrigationType:'',waterSource:'',riserCount:'',pressureIrrigation:false,dedicatedTransformer:false,pumpCount:'',seasonalPumpReduction:false,waterRightDoc:''};d.structural.ownerExpectations=d.structural.ownerExpectations||'';d.structural.commercialType=d.structural.commercialType||'';d.structural.storefrontWidth=d.structural.storefrontWidth||'';d.structural.ceilingHeight=d.structural.ceilingHeight||'';d.structural.businessLicense=d.structural.businessLicense||'';d.structural.yardArea=d.structural.yardArea||'';d.structural.loadingAccess=d.structural.loadingAccess||'';d.structural.industrialPower=d.structural.industrialPower||'';d.structural.threePhase=!!d.structural.threePhase;d.structural.crane=!!d.structural.crane;d.structural.ventilation=!!d.structural.ventilation;d.structural.presale=d.structural.presale||{progress:'',prepay:'',installments:'',delivery:'',builder:''};return d;}
 const DB_NAME='khb_local_v2',DB_VERSION=2,STORE='app',MEDIA_STORE='media';let idbPromise=null;
 function openKHBDB(){if(idbPromise)return idbPromise;idbPromise=new Promise((resolve,reject)=>{if(!window.indexedDB)return reject(new Error('IndexedDB unavailable'));const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE);if(!r.result.objectStoreNames.contains(MEDIA_STORE))r.result.createObjectStore(MEDIA_STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});return idbPromise;}
 async function idbGet(k){const db=await openKHBDB();return new Promise((res,rej)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
@@ -1307,9 +1389,11 @@ async function idbPut(k,v){const db=await openKHBDB();return new Promise((res,re
 async function migrateLocalData(){try{const existing=await idbGet('listings');if(existing)listings=existing.map(ensureDraftShape);else await idbPut('listings',(listings||[]).map(ensureDraftShape));const saved=await idbGet('settings');if(saved)settings={...settings,...saved};else await idbPut('settings',settings);applyTheme();render()}catch(e){console.warn('IndexedDB:',e)}}
 function saveListings(list){listings=list;idbPut('listings',list.map(ensureDraftShape)).catch(()=>{try{localStorage.setItem(LKEY,JSON.stringify(list))}catch(e){}})}
 function saveSettings(s){settings=s;idbPut('settings',s).catch(()=>{try{localStorage.setItem(SKEY,JSON.stringify(s))}catch(e){}})}
-function compressImage(file,opts={}){const maxW=opts.maxW||APP_CONFIG.imageMaxWidth,quality=opts.quality||.78;return new Promise((resolve,reject)=>{if(!file||!file.type.startsWith('image/'))return reject(new Error('not image'));const r=new FileReader();r.onerror=()=>reject(r.error);r.onload=e=>{const img=new Image();img.onerror=()=>reject(new Error('bad image'));img.onload=()=>{const scale=Math.min(1,maxW/img.width),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=quality,data=c.toDataURL('image/jpeg',q);while(data.length*.75>APP_CONFIG.maxImageBytes&&q>.45){q-=.06;data=c.toDataURL('image/jpeg',q)}resolve({dataUrl:data,width:w,height:h,originalBytes:file.size,estimatedBytes:Math.round(data.length*.75)})};img.src=e.target.result};r.readAsDataURL(file)})}
+function compressImage(file,opts={}){const maxW=opts.maxW||APP_CONFIG.imageMaxWidth,quality=opts.quality||.78;return new Promise((resolve,reject)=>{if(!file)return reject(new Error('no file'));const isImg=(file.type||'').startsWith('image/')||/\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name||'');if(!isImg)return reject(new Error('not image'));const r=new FileReader();r.onerror=()=>reject(r.error);r.onload=e=>{const img=new Image();img.onerror=()=>{resolve({dataUrl:e.target.result,width:0,height:0,originalBytes:file.size,estimatedBytes:file.size,raw:true})};img.onload=()=>{const scale=Math.min(1,maxW/img.width),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=quality,data=c.toDataURL('image/jpeg',q);while(data.length*.75>APP_CONFIG.maxImageBytes&&q>.45){q-=.06;data=c.toDataURL('image/jpeg',q)}resolve({dataUrl:data,width:w,height:h,originalBytes:file.size,estimatedBytes:Math.round(data.length*.75)})};img.src=e.target.result};r.readAsDataURL(file)})}
 function fileToThumb(file,maxW,cb){compressImage(file,{maxW:maxW||900}).then(r=>cb(r.dataUrl)).catch(()=>toast('تصویر قابل پردازش نبود.'))}
 const PAGE_GUIDANCE={1:['ملک خود را معرفی کنید','اطلاعات این مرحله برای ساخت پرونده ملک استفاده می‌شود؛ شما کنترل می‌کنید چه چیزی در آگهی عمومی نمایش داده شود.'],2:['مشخصات ملک را با دقت ثبت کنید','مواردی را که ندارید خالی بگذارید؛ این اطلاعات برای شناخت دقیق‌تر ملک و کاهش ابهام معامله ثبت می‌شود.'],3:['قیمت و نحوه پاسخگویی','قیمت پیشنهادی شما مبنای بررسی اولیه است و بدون تأیید شما تغییر نمی‌کند.'],4:['اطلاعات هویتی شما محرمانه است','مدارک هویتی برای احراز هویت دریافت می‌شود و نباید در آگهی عمومی نمایش داده شود.'],5:['اسناد ملک را با خیال راحت ارسال کنید','اسناد برای بررسی و تشکیل پرونده دریافت می‌شوند و نباید در آگهی عمومی قرار بگیرند.'],6:['تصاویر ملک را اضافه کنید','برنامه قبل از ذخیره، تصاویر را کم‌حجم می‌کند تا اینترنت و فضای ذخیره‌سازی شما کمتر مصرف شود.'],7:['یک بار دیگر پرونده را بررسی کنید','قبل از ثبت نهایی، اطلاعات و تصاویر را مرور کنید؛ سپس پرونده برای بررسی کارشناسی ارسال می‌شود.']};
+/* F9: متن راهنمای ویزارد مناقصه — ملک متعلق به سازمان برگزارکننده نیست */
+const TENDER_GUIDANCE={1:['مناقصه مدنظر را معرفی کنید','مناقصه توسط اداره یا سازمان برگزارکننده ثبت می‌شود؛ اطلاعات این مرحله برای ساخت پرونده مناقصه استفاده می‌شود.'],3:['شرایط و نحوه پاسخگویی مناقصه','اطلاعات تماس برگزارکننده مناقصه را وارد کنید.'],4:PAGE_GUIDANCE[4],5:PAGE_GUIDANCE[5],6:PAGE_GUIDANCE[6],7:PAGE_GUIDANCE[7]};
 function guidanceBox(step){const g=PAGE_GUIDANCE[step]||PAGE_GUIDANCE[1];return '<div class="page-guidance"><div class="page-guidance-title">'+g[0]+'</div><div>'+g[1]+'</div></div>'}
 function locationCard(d){const l=d.location||{},has=Number.isFinite(Number(l.lat))&&Number.isFinite(Number(l.lng));return '<div class="location-card"><div><b>موقعیت ملک روی نقشه</b><div class="muted">می‌توانید نقطه تقریبی ملک را انتخاب کنید تا حریم خصوصی مالک حفظ شود.</div></div><button class="btn btn-outline btn-sm" data-pick-location>⌖ '+(has?'ویرایش موقعیت':'انتخاب روی نقشه')+'</button>'+(has?'<div class="location-coords">'+Number(l.lat).toFixed(5)+' ، '+Number(l.lng).toFixed(5)+'</div>':'')+'</div>'}
 function openMapPicker(d){const wrap=document.createElement('div');wrap.className='modal-overlay';wrap.innerHTML='<div class="modal-sheet map-modal"><div class="modal-handle"></div><div class="drawer-title">انتخاب موقعیت ملک <button class="icon-btn modal-close">×</button></div><div class="info-box">نقطه را روی نقشه لمس کنید. موقعیت تقریبی هم قابل ثبت است.</div><div id="propertyMap" class="property-map"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-outline" data-use-location>موقعیت فعلی من</button><button class="btn btn-primary" data-save-map>ثبت موقعیت</button></div></div>';document.body.appendChild(wrap);let picked=d.location?.lat?{lat:+d.location.lat,lng:+d.location.lng}:null,map,marker;const init=()=>{if(!window.L){toast('نقشه در دسترس نیست؛ اتصال اینترنت را بررسی کنید.');return}map=L.map('propertyMap').setView(picked?[picked.lat,picked.lng]:[35.6892,51.389],picked?15:5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);if(picked)marker=L.marker([picked.lat,picked.lng]).addTo(map);map.on('click',e=>{picked={lat:e.latlng.lat,lng:e.latlng.lng};if(marker)marker.setLatLng(e.latlng);else marker=L.marker(e.latlng).addTo(map)})};requestAnimationFrame(init);wrap.querySelector('.modal-close').onclick=()=>wrap.remove();wrap.querySelector('[data-save-map]').onclick=()=>{if(!picked)return toast('یک نقطه روی نقشه انتخاب کنید.');d.location={...picked,source:'map',accuracy:'approx'};wrap.remove();render()};wrap.querySelector('[data-use-location]').onclick=()=>navigator.geolocation?.getCurrentPosition(p=>{picked={lat:p.coords.latitude,lng:p.coords.longitude};if(map){map.setView([picked.lat,picked.lng],16);map.fire('click',{latlng:L.latLng(picked.lat,picked.lng)});}},()=>toast('دسترسی به موقعیت مکانی رد شد.'))}
@@ -1321,9 +1405,21 @@ function stepCategory(d,isTender){
     : '<div class="filter-row"><div><label class="field-label">استان / منطقه (اختیاری)</label><input id="dForeignProvince" value="'+escapeHtml(d.province||'')+'" placeholder="مثلاً: استانبول"></div><div><label class="field-label">شهر</label><input id="dForeignCity" value="'+escapeHtml(d.city||'')+'" placeholder="مثلاً: استانبول"></div></div>';
   return (isTender?'<label class="field-label">نام سازمان / اداره برگزارکننده</label><input type="text" id="dOrg" value="'+escapeHtml(d.orgName)+'">':'')+'<label class="field-label">دسته‌بندی</label><div class="cat-grid">'+list.map(c=>'<div class="cat-chip '+(d.category===c.id?'active':'')+'" data-setcat="'+c.id+'"><span class="ic">'+c.ic+'</span><span>'+c.label+'</span></div>').join('')+'</div><label class="field-label">کشور</label><select id="dCountry">'+COUNTRIES.map(c=>'<option value="'+c.id+'" '+(country===c.id?'selected':'')+'>'+c.flag+' '+c.name+'</option>').join('')+'</select>'+locationHtml+locationCard(d)+'<label class="field-label">عنوان '+(isTender?'مناقصه':'آگهی')+'</label><input type="text" id="dTitle" value="'+escapeHtml(d.title)+'" placeholder="مثلاً: آپارتمان ۸۵ متری دو خواب"><label class="field-label">توضیحات</label><textarea id="dDesc" rows="4" maxlength="2000" placeholder="توضیحات تکمیلی">'+escapeHtml(d.desc)+'</textarea><div class="field-hint">'+toFa((d.desc||'').length)+' / ۲۰۰۰</div>'
 }
-function stepPricing(d){const cat=catInfo(d.category);return (cat.rent?'<label class="field-label">مبلغ بیعانه/رهن (تومان)</label><input type="number" id="pDeposit" value="'+escapeHtml(d.pricing.deposit)+'"><div class="words-hint">'+(d.pricing.deposit?numberToWordsFa(d.pricing.deposit):'به حروف اینجا نمایش داده می‌شود')+'</div><label class="field-label">اجاره ماهانه (تومان)</label><input type="number" id="pMonthly" value="'+escapeHtml(d.pricing.monthly)+'"><div class="words-hint">'+(d.pricing.monthly?numberToWordsFa(d.pricing.monthly):'به حروف اینجا نمایش داده می‌شود')+'</div>':'<label class="field-label">مبلغ کل (تومان)</label><input type="number" id="pTotal" value="'+escapeHtml(d.pricing.total)+'"><div class="words-hint">'+(d.pricing.total?numberToWordsFa(d.pricing.total):'به حروف اینجا نمایش داده می‌شود')+'</div><label class="field-label">قیمت هر متر (تومان) — اختیاری</label><input type="number" id="pPerMeter" value="'+escapeHtml(d.pricing.perMeter)+'"><div class="words-hint">'+(d.pricing.perMeter?numberToWordsFa(d.pricing.perMeter):'به حروف اینجا نمایش داده می‌شود')+'</div>')+'<label class="field-label">شماره تماس متقاضی</label><input type="tel" id="pPhone" value="'+escapeHtml(d.phone)+'" placeholder="۰۹xxxxxxxxx"><label class="field-label">پاسخگویی تماس‌ها</label><div class="cat-grid"><div class="cat-chip '+(d.answerMode==='self'?'active':'')+'" data-setanswer="self"><span class="ic">🙋</span><span>خودم پاسخگو هستم</span></div><div class="cat-chip '+(d.answerMode==='company'?'active':'')+'" data-setanswer="company"><span class="ic">🏢</span><span>۴ دیواری نمایندگی کند</span></div></div>'+(d.answerMode==='company'?'<div class="payment-card"><b>نمایندگی ۴ دیواری</b><p>پس از اتصال حساب شرکت به درگاه بانکی، هزینه خدمات از داخل برنامه پرداخت می‌شود.</p><button class="btn btn-success btn-sm" data-start-payment>💳 پرداخت هزینه نمایندگی</button><small>درگاه واقعی نیازمند اتصال امن Backend و کلیدهای درگاه است.</small></div>':'')}
-function stepIdentity(d){const box=(k,l,s)=>'<div class="upload-box '+(d.identity[k]?'has-file':'')+'">'+(d.identity[k]?'<img src="'+d.identity[k]+'" style="max-height:90px;border-radius:8px;margin-bottom:6px;">':'')+'<span class="ic">'+(d.identity[k]?'✅':'🪪')+'</span><div class="lbl">'+l+'</div><div class="sub">'+(d.identity[k]?'بارگذاری شد — برای تغییر لمس کنید':s)+'</div><input type="file" accept="image/*" data-idfile="'+k+'"></div>';return guidanceBox(4)+'<div class="privacy-hero"><b>اطلاعات هویتی شما نزد ۴ دیواری محرمانه است.</b><span>این مدارک برای احراز هویت و تشکیل پرونده دریافت می‌شود و در آگهی عمومی نمایش داده نمی‌شود.</span></div>'+box('national','عکس کارت ملی','واضح و کامل')+box('birth','عکس شناسنامه','صفحه اول شناسنامه')+box('sana','عکس برگه ثنا','تصویر صفحه ثبت‌نام ثنا')}
-function stepProperty(d){const section=(k,l)=>'<label class="field-label">'+l+' <span class="pill">'+d.property[k].length+' عکس</span></label><div class="thumb-grid">'+d.property[k].map((src,i)=>'<div class="thumb"><img src="'+src+'"><button class="rm" data-rmprop="'+k+':'+i+'">✕</button></div>').join('')+'<div class="thumb-add"><span>➕</span><span>افزودن</span><input type="file" accept="image/*" multiple data-propfile="'+k+'"></div></div>';return guidanceBox(5)+'<div class="privacy-hero"><b>این اسناد سرمایه و حریم خصوصی شما هستند.</b><span>در نسخه نهایی، فایل‌ها باید در فضای خصوصی و با کنترل دسترسی نگهداری شوند.</span></div>'+section('ownership','اسناد مالکیت')+section('construction','اسناد ساخت‌وساز')+section('permits','مجوزات و مستندات')+'<div class="field-hint">حداقل یک تصویر از اسناد مالکیت برای ادامه لازم است.</div>'}
+function stepPricing(d){const cat=catInfo(d.category);return (cat.rent?'<label class="field-label">مبلغ بیعانه/رهن (تومان)</label><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" id="pDeposit" value="'+escapeHtml(d.pricing.deposit)+'"><div class="words-hint">'+(d.pricing.deposit?numberToWordsFa(d.pricing.deposit):'به حروف اینجا نمایش داده می‌شود')+'</div><label class="field-label">اجاره ماهانه (تومان)</label><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" id="pMonthly" value="'+escapeHtml(d.pricing.monthly)+'"><div class="words-hint">'+(d.pricing.monthly?numberToWordsFa(d.pricing.monthly):'به حروف اینجا نمایش داده می‌شود')+'</div>':'<label class="field-label">مبلغ کل (تومان)</label><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" id="pTotal" value="'+escapeHtml(d.pricing.total)+'"><div class="words-hint">'+(d.pricing.total?numberToWordsFa(d.pricing.total):'به حروف اینجا نمایش داده می‌شود')+'</div><label class="field-label">قیمت هر متر (تومان) — اختیاری</label><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" id="pPerMeter" value="'+escapeHtml(d.pricing.perMeter)+'"><div class="words-hint">'+(d.pricing.perMeter?numberToWordsFa(d.pricing.perMeter):'به حروف اینجا نمایش داده می‌شود')+'</div>')+'<label class="field-label">شماره تماس متقاضی</label><input type="tel" inputmode="tel" id="pPhone" value="'+escapeHtml(d.phone)+'" placeholder="۰۹xxxxxxxxx"><label class="field-label">پاسخگویی تماس‌ها</label><div class="cat-grid"><div class="cat-chip '+(d.answerMode==='self'?'active':'')+'" data-setanswer="self"><span class="ic">🙋</span><span>خودم پاسخگو هستم</span></div><div class="cat-chip '+(d.answerMode==='company'?'active':'')+'" data-setanswer="company"><span class="ic">🏢</span><span>۴ دیواری نمایندگی کند</span></div></div>'+(d.answerMode==='company'?'<div class="payment-card"><b>نمایندگی ۴ دیواری</b><p>پس از اتصال حساب شرکت به درگاه بانکی، هزینه خدمات از داخل برنامه پرداخت می‌شود.</p><button class="btn btn-success btn-sm" data-start-payment>💳 پرداخت هزینه نمایندگی</button><small>درگاه واقعی نیازمند اتصال امن Backend و کلیدهای درگاه است.</small></div>':'')
+  /* F26: اجازه بازدید حضوری ملک */
+  +'<div class="checkbox-row" style="margin-top:14px"><input type="checkbox" id="pVisitAllow" '+(d.visitAllowed?'checked':'')+'><label for="pVisitAllow">اجازه بازدید از ملک را می‌دهم</label></div>'
+  +'<div class="field-hint">اگر فعال شود، در صفحه آگهی «امکان بازدید حضوری» نمایش داده می‌شود و متقاضی می‌تواند درخواست بازدید ثبت کند.</div>'}
+function stepIdentity(d){const box=(k,l,s)=>'<div class="upload-box '+(d.identity[k]?'has-file':'')+'">'+(d.identity[k]?'<img src="'+d.identity[k]+'" style="max-height:90px;border-radius:8px;margin-bottom:6px;">':'')+'<span class="ic">'+(d.identity[k]?'✅':'🪪')+'</span><div class="lbl">'+l+'</div><div class="sub">'+(d.identity[k]?'بارگذاری شد — برای تغییر لمس کنید':s)+'</div><input type="file" accept="image/*" data-idfile="'+k+'"></div>';return guidanceBox(4)+'<div class="privacy-hero"><b>اطلاعات هویتی شما نزد ۴ دیواری محرمانه است.</b><span>این مدارک برای احراز هویت و تشکیل پرونده دریافت می‌شود و در آگهی عمومی نمایش داده نمی‌شود.</span></div>'+box('national','عکس کارت ملی','واضح و کامل')+box('birth','عکس شناسنامه','صفحه اول شناسنامه')+box('sana','عکس برگه ثنا','تصویر صفحه ثبت‌نام ثنا')
+  /* F14: کارشناس فروش همان آگهی‌دهنده است — نام و عکس پروفایل زیر آگهی نمایش داده می‌شود */
+  +'<div class="section-title">👤 کارشناس فروش این آگهی</div>'
+  +'<div class="field-hint">کارشناس فروش هر آگهی، خود ثبت‌کننده است؛ نام و عکس پروفایل شما زیر آگهی نمایش داده می‌شود.</div>'
+  +'<input type="text" id="dAgentName" value="'+escapeHtml(d.agent?.name||'')+'" placeholder="نام و نام خانوادگی کارشناس فروش">'
+  +'<div class="upload-box '+(d.agent?.photo?'has-file':'')+'" style="margin-top:10px">'
+  +(d.agent?.photo?'<img src="'+d.agent.photo+'" style="max-height:90px;border-radius:8px;margin-bottom:6px;">':'')
+  +'<span class="ic">'+(d.agent?.photo?'✅':'🖼️')+'</span><div class="lbl">عکس پروفایل کارشناس فروش</div>'
+  +'<div class="sub">'+(d.agent?.photo?'بارگذاری شد — برای تغییر لمس کنید':'تصویر چهره واضح')+'</div>'
+  +'<input type="file" accept="image/*" data-agentfile="1"></div>'}
+function stepProperty(d){const section=(k,l)=>'<label class="field-label">'+l+' <span class="pill">'+d.property[k].length+' عکس</span></label><div class="thumb-grid">'+d.property[k].map((src,i)=>'<div class="thumb"><img src="'+src+'"><button class="rm" data-rmprop="'+k+':'+i+'">✕</button></div>').join('')+'<div class="thumb-add"><span>➕</span><span>افزودن</span><input type="file" accept="image/*" multiple data-propfile="'+k+'"></div></div>';return guidanceBox(5)+'<div class="privacy-hero"><b>این اسناد سرمایه و حریم خصوصی شما هستند.</b><span>در نسخه نهایی، فایل‌ها باید در فضای خصوصی و با کنترل دسترسی نگهداری شوند.</span></div>'+section('ownership','اسناد مالکیت')+section('construction','اسناد ساخت‌وساز')+section('permits','مجوزات و مستندات')+section('engineering','تاییدیه نظام مهندسی (ویژه فروش)')+'<div class="field-hint">حداقل یک تصویر از اسناد مالکیت برای ادامه لازم است. برای آگهی فروش، بارگذاری تاییدیه نظام مهندسی توصیه می‌شود.</div>'}
 function stepDealPhotos(d){return guidanceBox(6)+'<label class="field-label">عکس‌های مورد معامله <span class="pill">'+d.dealPhotos.length+' از ۸</span></label><div class="thumb-grid">'+d.dealPhotos.map((src,i)=>'<div class="thumb"><img src="'+src+'"><button class="rm" data-rmdeal="'+i+'">✕</button></div>').join('')+(d.dealPhotos.length<8?'<div class="thumb-add"><span>📷</span><span>افزودن عکس</span><small>خودکار کم‌حجم می‌شود</small><input type="file" accept="image/*" multiple id="dealFileInput"></div>':'')+'</div><div class="compression-note">⚡ عکس‌های بزرگ قبل از ذخیره کم‌حجم می‌شوند.</div>'}
 function renderWizard(isTender){
   const st=isTender?state.tenders:state.post;
@@ -1361,7 +1457,7 @@ function renderWizard(isTender){
     step===6 ? stepDealPhotos(d) :
     stepReview(d,isTender);
 
-  const guidance=PAGE_GUIDANCE[step];
+  const guidance=(isTender&&TENDER_GUIDANCE[step])||PAGE_GUIDANCE[step];
 
   return `
     <div class="wizard-header">
@@ -1425,6 +1521,7 @@ function renderBrowse(){
   b.countries=Array.isArray(b.countries)?b.countries:[];
   b.provinces=Array.isArray(b.provinces)?b.provinces:[];
   b.cities=Array.isArray(b.cities)?b.cities:[];
+  b._openSec=b._openSec||{countries:true};
   let r=listings.filter(l=>l.status==='approved'&&!l.isTender);
   r=r.filter(l=>{
     const country=l.country||'IR';
@@ -1437,8 +1534,10 @@ function renderBrowse(){
     return countrySelected || b.countries.includes('IR');
   });
   if(b.category)r=r.filter(l=>l.category===b.category);
-  if(b.priceMin)r=r.filter(l=>parseNum(l.pricing?.total)>=parseNum(b.priceMin)||!l.pricing?.total);
-  if(b.priceMax)r=r.filter(l=>!l.pricing?.total||parseNum(l.pricing.total)<=parseNum(b.priceMax));
+  /* F13: قیمت مؤثر — برای فروش مبلغ کل، برای اجاره بیعانه یا اجاره ماهانه */
+  const effPrice=l=>{const p=l.pricing||{};const t=parseNum(p.total);if(t)return t;const dep=parseNum(p.deposit),mo=parseNum(p.monthly);return dep||mo||0;};
+  if(b.priceMin)r=r.filter(l=>{const v=effPrice(l);return v>0&&v>=parseNum(b.priceMin);});
+  if(b.priceMax)r=r.filter(l=>{const v=effPrice(l);return v>0&&v<=parseNum(b.priceMax);});
   r.sort((x,y)=>y.createdAt-x.createdAt);
   const selectedCountryNames=b.countries.map(countryLabel);
   const selectedLocations=[...selectedCountryNames,...b.provinces,...b.cities];
@@ -1447,16 +1546,16 @@ function renderBrowse(){
   const citySet=new Set();
   (b.provinces.length?b.provinces:Object.keys(PROVINCES)).forEach(p=>(PROVINCES[p]||[]).forEach(c=>citySet.add(c)));
   const cityButtons=[...citySet].sort((a,z)=>a.localeCompare(z,'fa')).map(c=>'<button type="button" class="location-pill '+(b.cities.includes(c)?'active':'')+'" data-city="'+escapeHtml(c)+'">'+escapeHtml(c)+'</button>').join('');
-  return heroCarouselHtml()+
+  return heroCarouselHtml()+'<div class="legal-box" style="margin:-4px 0 12px">🚨 <b>هشدار امنیت معامله:</b> پیش از هرگونه واریز وجه، حتماً ملک را بازدید، سند را از سامانه ثبت اسناد استعلام و هویت مالک را احراز کنید. ۴ دیواری مدارک آگهی‌دهندگان را بررسی می‌کند، اما مسئولیت نهایی معامله با طرفین است.</div>'+
     '<div class="section-title page-section-title">جست‌وجوی ملک</div>'+
     '<div class="multi-location-box"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>📍 محدوده‌های جست‌وجو</b><button type="button" class="btn btn-outline btn-sm" id="clearLocations">پاک کردن</button></div>'+
     '<div class="location-pills"><button type="button" class="location-pill all '+(b.countries.includes('IR')&&!b.provinces.length&&!b.cities.length?'active':'')+'" data-all-iran="1">🇮🇷 تمام ایران</button></div>'+
-    '<details class="multi-location-section" open><summary>کشورها</summary><div class="location-pills">'+countries+'</div></details>'+
-    '<details class="multi-location-section"><summary>چند استان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+provinceButtons+'</div></div></details>'+
-    '<details class="multi-location-section"><summary>چند شهرستان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+cityButtons+'</div></div></details>'+
+    '<details class="multi-location-section" data-sec="countries" '+((b._openSec.countries!==false)?'open':'')+'><summary>کشورها</summary><div class="location-pills">'+countries+'</div></details>'+
+    '<details class="multi-location-section" data-sec="provinces" '+(b._openSec.provinces?'open':'')+'><summary>چند استان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+provinceButtons+'</div></div></details>'+
+    '<details class="multi-location-section" data-sec="cities" '+(b._openSec.cities?'open':'')+'><summary>چند شهرستان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+cityButtons+'</div></div></details>'+
     '<div class="selection-count">'+(selectedLocations.length?('انتخاب شده: '+selectedLocations.map(escapeHtml).join(' · ')):'همه محدوده‌ها')+'</div>'+
     '<div class="foreign-note">کشورهای همجوار ایران نیز قابل جست‌وجو هستند. اجاره کوتاه‌مدت خارجی می‌تواند شامل قیمت، شهر و اطلاعات تماس آگهی‌دهنده باشد.</div></div>'+
-    '<div class="filter-card"><div class="filter-row"><div><label class="field-label">حداقل قیمت</label><input type="number" id="fPriceMin" value="'+escapeHtml(b.priceMin||'')+'"></div><div><label class="field-label">حداکثر قیمت</label><input type="number" id="fPriceMax" value="'+escapeHtml(b.priceMax||'')+'"></div></div></div>'+
+    '<div class="filter-card"><div class="filter-row"><div><label class="field-label">حداقل قیمت</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="fPriceMin" value="'+escapeHtml(b.priceMin||'')+'"></div><div><label class="field-label">حداکثر قیمت</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="fPriceMax" value="'+escapeHtml(b.priceMax||'')+'"></div></div></div>'+
     '<div class="section-title">دسته‌بندی</div><div class="cat-grid">'+CATEGORIES.map(c=>'<div class="cat-chip '+(b.category===c.id?'active':'')+'" data-fcat="'+c.id+'"><span class="ic">'+c.ic+'</span><span>'+c.label+'</span></div>').join('')+'</div>'+
     '<div class="section-title">'+toFa(r.length)+' آگهی یافت شد</div>'+(r.length?r.map(renderListingCard).join(''):'<div class="empty-state"><div class="ic">🔍</div><div>آگهی‌ای با این فیلتر پیدا نشد.</div></div>');
 }
@@ -1464,6 +1563,7 @@ function renderBrowse(){
 function downloadWord(l){const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma,Arial;direction:rtl;line-height:2}h1{color:#2f8f63}table{width:100%;border-collapse:collapse}td{border:1px solid #ccc;padding:6px}</style></head><body><h1>۴ دیواری — پرونده آگهی</h1><table><tr><td>کد انتشار</td><td>'+escapeHtml(l.publishCode||l.id)+'</td></tr><tr><td>عنوان</td><td>'+escapeHtml(l.title)+'</td></tr><tr><td>دسته</td><td>'+escapeHtml(catLabel(l.category,CATEGORIES))+'</td></tr><tr><td>موقعیت</td><td>'+escapeHtml((l.province||'')+' / '+(l.city||''))+'</td></tr><tr><td>قیمت</td><td>'+escapeHtml(priceSummary(l))+'</td></tr><tr><td>توضیحات</td><td>'+escapeHtml(l.desc||'—')+'</td></tr><tr><td>تاریخ ثبت</td><td>'+escapeHtml(fmtDate(l.createdAt))+'</td></tr></table><h2>تصاویر و مدارک</h2><p>عکس ملک: '+(l.dealPhotos||[]).length+' — اسناد مالکیت: '+(l.property?.ownership||[]).length+' — اسناد ساخت‌وساز: '+(l.property?.construction||[]).length+' — مجوزات: '+(l.property?.permits||[]).length+'</p><p>اصل اسناد باید در بایگانی امن نگهداری شود.</p></body></html>';const blob=new Blob([html],{type:'application/msword;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='khb-'+(l.publishCode||l.id)+'.doc';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
 const _oldBind=bindDynamicHandlers; bindDynamicHandlers=function(){_oldBind();
+  document.querySelectorAll('.multi-location-section').forEach(sec=>sec.addEventListener('toggle',()=>{state.browse._openSec=state.browse._openSec||{};state.browse._openSec[sec.dataset.sec]=sec.open;}));
   document.querySelectorAll('[data-country]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.country;const a=state.browse.countries||[];state.browse.countries=a.includes(id)?a.filter(x=>x!==id):[...a,id];if(id!=='IR'){state.browse.provinces=[];state.browse.cities=[];}render();}));
   const allIran=document.getElementById('clearLocations'); if(allIran)allIran.addEventListener('click',()=>{state.browse.countries=[];state.browse.provinces=[];state.browse.cities=[];render();});
   document.querySelectorAll('[data-all-iran]').forEach(b=>b.addEventListener('click',()=>{state.browse.countries=['IR'];state.browse.provinces=[];state.browse.cities=[];render();}));
@@ -1543,9 +1643,13 @@ renderBrowse=function(){
 };
 const _renderBase=render;
 render=function(){
+  const view=document.getElementById('view');
+  /* F3/F5: در مراحل ثبت آگهی/مناقصه موقعیت اسکرول حفظ می‌شود تا صفحه بعد از
+     انتخاب گزینه یا افزودن عکس به بالای صفحه نپرد. */
+  const keepY=(state.tab==='post'||state.tab==='tenders');
+  const prevY=keepY?view.scrollTop:0;
   Object.values(carouselTimers).forEach(clearInterval);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab));
-  const view=document.getElementById('view');
   if(state.tab==='browse') view.innerHTML=renderBrowse();
   else if(state.tab==='post') view.innerHTML=renderPost();
   else if(state.tab==='tenders') view.innerHTML=renderTendersTab();
@@ -1553,7 +1657,8 @@ render=function(){
   else if(state.tab==='detailedMaps') view.innerHTML=renderDetailedMaps();
   else if(state.tab==='detailedMapsOperator') view.innerHTML=renderDetailedMapsOperator();
   else if(state.tab==='operator') view.innerHTML=renderOperator();
-  bindDynamicHandlers();bindRegionAndMaps();startCardCarousels();startHeroCarousel();view.scrollTop=0;
+  bindDynamicHandlers();bindRegionAndMaps();startCardCarousels();startHeroCarousel();
+  if(keepY) view.scrollTop=prevY; else view.scrollTop=0;
 };
 const _bindBase=bindDynamicHandlers;
 bindDynamicHandlers=function(){
@@ -1589,7 +1694,7 @@ function loadLeafletForMap(){
 function renderMap(){
   const approved=listings.filter(l=>l.status==='approved'&&!l.isTender);
   const mapped=approved.filter(l=>l.location&&Number.isFinite(Number(l.location.lat))&&Number.isFinite(Number(l.location.lng)));
-  return `<div class="page-guidance"><div class="page-guidance-title">نقشه املاک</div><div>ملک‌هایی که مالک برای نمایش عمومی موقعیت ثبت کرده است روی نقشه دیده می‌شوند. موقعیت خصوصی اسناد و اطلاعات هویتی نمایش داده نمی‌شود.</div></div><div id="publicMap" class="property-map public-map"></div><div class="section-title">آگهی‌های روی نقشه</div>${mapped.length?mapped.map(l=>{const lat=Number(l.location.lat),lng=Number(l.location.lng);const earth='https://earth.google.com/web/@'+lat+','+lng+',500a,1000d,35y,0h,0t,0r';return `<div class="map-list-item"><div><b>${escapeHtml(l.title)}</b><div class="muted">${escapeHtml(l.province||'')} · ${escapeHtml(l.city||'')}</div></div><div style="display:flex;gap:5px"><a href="${earth}" target="_blank" rel="noopener"><button class="btn btn-outline btn-sm">🌐 3D</button></a><button class="btn btn-primary btn-sm" data-open="${l.id}">مشاهده</button></div></div>`}).join(''):`<div class="empty-state"><div class="ic">⌖</div><div>هنوز آگهی عمومی دارای موقعیت نقشه ثبت نشده است.</div></div>`}`;
+  return `<div class="page-guidance"><div class="page-guidance-title">نقشه املاک</div><div>ملک‌هایی که مالک برای نمایش عمومی موقعیت ثبت کرده است روی نقشه دیده می‌شوند. موقعیت خصوصی اسناد و اطلاعات هویتی نمایش داده نمی‌شود.</div></div><div id="publicMap" class="property-map public-map"></div><div class="section-title">آگهی‌های روی نقشه</div>${mapped.length?mapped.map(l=>{const lat=Number(l.location.lat),lng=Number(l.location.lng);const earth='https://www.google.com/maps/@?api=1&map_action=map&center='+lat+'%2C'+lng+'&zoom=18&basemap=satellite';return `<div class="map-list-item"><div><b>${escapeHtml(l.title)}</b><div class="muted">${escapeHtml(l.province||'')} · ${escapeHtml(l.city||'')}</div></div><div style="display:flex;gap:5px"><a href="${earth}" target="_blank" rel="noopener"><button class="btn btn-outline btn-sm">🛰️ نمای ماهواره‌ای/3D</button></a><button class="btn btn-primary btn-sm" data-open="${l.id}">مشاهده</button></div></div>`}).join(''):`<div class="empty-state"><div class="ic">⌖</div><div>هنوز آگهی عمومی دارای موقعیت نقشه ثبت نشده است.</div></div>`}`;
 }
 const _oldBind2=bindDynamicHandlers; bindDynamicHandlers=function(){_oldBind2();if(state.tab==='map'){const el=document.getElementById('publicMap');if(el){if(window.L){initPublicMap(el);}else{el.innerHTML='<div class="empty-state"><div class="ic">🗺️</div><div>در حال آماده‌سازی نقشه…</div></div>';loadLeafletForMap().then(()=>{if(state.tab==='map')initPublicMap(document.getElementById('publicMap'));}).catch(()=>{if(el)el.innerHTML='<div class="empty-state"><div class="ic">🌐</div><div>برای نمایش نقشه، اتصال اینترنت را فعال کنید.</div></div>';});}}}}
 function initPublicMap(el){if(!window.L||!el||el.dataset.mapReady==='1')return;el.dataset.mapReady='1';const mapped=listings.filter(l=>l.status==='approved'&&!l.isTender&&l.location&&Number.isFinite(Number(l.location.lat)));const center=mapped[0]?[+mapped[0].location.lat,+mapped[0].location.lng]:[35.6892,51.389];const map=L.map(el).setView(center,mapped.length?7:5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);mapped.forEach(l=>{const m=L.marker([+l.location.lat,+l.location.lng]).addTo(map);m.bindPopup('<b>'+escapeHtml(l.title)+'</b><br>'+escapeHtml(l.province||'')+' · '+escapeHtml(l.city||''));});}
@@ -1667,6 +1772,8 @@ function ensureFeatureShape(d){
   d.videoKey=d.videoKey||null;
   d.virtualTour=d.virtualTour||{enabled:false,sceneOrder:[]};
   d.expertRequests=Array.isArray(d.expertRequests)?d.expertRequests:[];
+  d.agent=d.agent||{name:'',photo:null};
+  d.visitAllowed=!!d.visitAllowed;
   d.payment=d.payment||{representative:false,status:'not_started',amount:0,authority:null};
   return d;
 }
@@ -1729,16 +1836,24 @@ function expertRequestModal(listingId){
   const wrap=document.createElement('div');wrap.className='modal-overlay';
   wrap.innerHTML=`<div class="modal-sheet"><div class="modal-handle"></div><div class="drawer-title">درخواست کارشناس رسمی دادگستری <button class="icon-btn modal-close">×</button></div>
   <div class="info-box"><b>موضوع کارشناسی را دقیق بنویسید.</b><br>۴ دیواری درخواست را ثبت و برای هماهنگی با کارشناس دارای صلاحیت پیگیری می‌کند. گزارش نهایی باید توسط خود کارشناس رسمی صادر و مهر/امضا شود.</div>
-  <label class="field-label">موضوع کارشناسی</label><select id="expertSubject"><option value="value">تعیین ارزش روز ملک</option><option value="survey">نقشه‌برداری، مساحت و مختصات</option><option value="boundary">بررسی حدود و موقعیت</option><option value="damage">ارزیابی خسارت</option><option value="building">ارزیابی ساختمان</option><option value="evidence">تأمین دلیل</option><option value="other">سایر</option></select>
+  <label class="field-label">موضوع کارشناسی (می‌توانید چند مورد را با هم انتخاب کنید)</label><div class="cat-grid" id="expertSubjects">
+  ${['تعیین ارزش روز ملک','نقشه‌برداری، مساحت و مختصات','بررسی حدود و موقعیت','ارزیابی خسارت','ارزیابی ساختمان','تأمین دلیل','سایر'].map(s=>`<div class="cat-chip" data-expsubject="${s}"><span class="ic">▫️</span><span>${s}</span></div>`).join('')}
+  </div>
   <label class="field-label">هدف و خواسته شما از کارشناس</label><textarea id="expertGoal" rows="5" placeholder="مثلاً: می‌خواهم چهار گوشه زمین، مساحت دقیق و مختصات آن مشخص شود."></textarea>
   <label class="field-label">توضیحات تکمیلی</label><textarea id="expertNote" rows="3" placeholder="هر نکته‌ای که برای انتخاب کارشناس لازم است..."></textarea>
   <label class="field-label">محدوده خدمات</label><input id="expertCity" value="${escapeHtml((l.province||'')+' / '+(l.city||''))}" placeholder="استان / شهرستان">
   <div class="legal-box">هزینه کارشناس رسمی بر اساس موضوع، صلاحیت موردنیاز و شرایط پرونده تعیین می‌شود. مبلغ نهایی قبل از پرداخت به شما اعلام خواهد شد.</div>
   <div class="btn-row" style="margin-top:14px"><button class="btn btn-outline" id="expertCancel">انصراف</button><button class="btn btn-primary" id="expertSave">ثبت درخواست</button></div></div>`;
   document.body.appendChild(wrap);
+  /* F16: انتخاب چند موضوع بدون رندر مجدد صفحه */
+  wrap.querySelectorAll('[data-expsubject]').forEach(el=>el.addEventListener('click',()=>{
+    el.classList.toggle('active'); el.querySelector('.ic').textContent=el.classList.contains('active')?'✅':'▫️';
+  }));
   wrap.querySelector('.modal-close').onclick=()=>wrap.remove();wrap.querySelector('#expertCancel').onclick=()=>wrap.remove();
   wrap.querySelector('#expertSave').onclick=()=>{
-    const req={id:uid(),listingId,subject:document.getElementById('expertSubject').value,goal:document.getElementById('expertGoal').value.trim(),note:document.getElementById('expertNote').value.trim(),serviceArea:document.getElementById('expertCity').value.trim(),status:'pending',createdAt:Date.now(),report:null};
+    const subjects=[...wrap.querySelectorAll('[data-expsubject].active')].map(el=>el.dataset.expsubject);
+    const req={id:uid(),listingId,subjects,subject:subjects.join('، '),goal:document.getElementById('expertGoal').value.trim(),note:document.getElementById('expertNote').value.trim(),serviceArea:document.getElementById('expertCity').value.trim(),status:'pending',createdAt:Date.now(),report:null};
+    if(!subjects.length){toast('حداقل یک موضوع کارشناسی را انتخاب کنید.');return;}
     if(!req.goal){toast('هدف و خواسته از کارشناس را بنویسید.');return;}
     const a=expertRequestsLoad();a.unshift(req);expertRequestsSave(a);wrap.remove();toast('درخواست کارشناسی ثبت شد. پس از بررسی، هزینه و مراحل هماهنگی اعلام می‌شود.');
   };
@@ -1748,7 +1863,7 @@ function renderExpertRequests(){
   return `<div class="page-guidance"><div class="page-guidance-title">⚖️ کارشناسی رسمی</div><div>درخواست خود را ثبت کنید؛ موضوع و خواسته شما برای هماهنگی با کارشناس دارای صلاحیت ثبت می‌شود.</div></div>
   <div class="service-card featured"><b>کارشناس رسمی دادگستری</b><p>برای ارزش‌گذاری، نقشه‌برداری، تعیین حدود، خسارت یا تأمین دلیل.</p><button class="btn btn-primary" id="expertNewGlobal">ثبت درخواست جدید</button></div>
   <div class="section-title">درخواست‌های شما</div>
-  ${a.length?a.map(r=>{const l=listings.find(x=>x.id===r.listingId);return `<div class="op-item"><div class="op-item-top"><b>${escapeHtml(l?.title||'پرونده ملک')}</b><span class="pill">${r.status==='pending'?'در انتظار بررسی':r.status==='quoted'?'اعلام هزینه':'تکمیل‌شده'}</span></div><div class="muted" style="margin-top:6px">موضوع: ${escapeHtml(r.subject)}<br>خواسته: ${escapeHtml(r.goal)}</div>${r.report?`<div class="info-box" style="margin-top:8px">گزارش کارشناسی بارگذاری شده است: ${escapeHtml(r.report.fileName||'گزارش')}</div>`:''}</div>`}).join(''):'<div class="empty-state"><div class="ic">⚖️</div><div>هنوز درخواست کارشناسی ثبت نکرده‌اید.</div></div>'}`;
+  ${a.length?a.map(r=>{const l=listings.find(x=>x.id===r.listingId);return `<div class="op-item"><div class="op-item-top"><b>${escapeHtml(l?.title||'پرونده ملک')}</b><span class="pill">${r.status==='pending'?'در انتظار بررسی':r.status==='quoted'?'اعلام هزینه':'تکمیل‌شده'}</span></div><div class="muted" style="margin-top:6px">موضوع: ${escapeHtml(r.subject||(r.subjects||[]).join('، '))}<br>خواسته: ${escapeHtml(r.goal)}</div>${r.report?`<div class="info-box" style="margin-top:8px">گزارش کارشناسی بارگذاری شده است: ${escapeHtml(r.report.fileName||'گزارش')}</div>`:''}</div>`}).join(''):'<div class="empty-state"><div class="ic">⚖️</div><div>هنوز درخواست کارشناسی ثبت نکرده‌اید.</div></div>'}`;
 }
 
 /* ---------- خدمات و قیمت ---------- */
@@ -1848,12 +1963,13 @@ function viewVideoHandlers(){
 const _baseDrawerHtml=drawerHtml;
 drawerHtml=function(){
   const h=_baseDrawerHtml();
-  return h.replace('<button id="menuContracts">','<button id="menuServices"><span class="ml-icon">💚</span><span>هزینه و خدمات</span></button><button id="menuExpert"><span class="ml-icon">⚖️</span><span>درخواست کارشناس رسمی</span></button><button id="menuContracts">');
+  return h.replace('<button id="menuContracts">','<button id="menuFavs"><span class="ml-icon">❤️</span><span>علاقه‌مندی‌های من</span></button><button id="menuServices"><span class="ml-icon">💚</span><span>هزینه و خدمات</span></button><button id="menuExpert"><span class="ml-icon">⚖️</span><span>درخواست کارشناس رسمی</span></button><button id="menuContracts">');
 };
 const _baseBindDrawer=bindDrawerHandlers;
 bindDrawerHandlers=function(){
   _baseBindDrawer();
   const s=document.getElementById('menuServices');if(s)s.onclick=()=>{state.tab='services';closeDrawer();render();};
+  const fv=document.getElementById('menuFavs');if(fv)fv.onclick=()=>{state.tab='favorites';closeDrawer();render();};
   const e=document.getElementById('menuExpert');if(e)e.onclick=()=>{state.tab='expert';closeDrawer();render();};
 };
 
@@ -1865,9 +1981,12 @@ render=function(){
   const view=document.getElementById('view');
   if(state.tab==='services')view.innerHTML=renderServices();
   else if(state.tab==='expert')view.innerHTML=renderExpertRequests();
+  else if(state.tab==='chat')view.innerHTML=renderChat();
+  else if(state.tab==='favorites')view.innerHTML=renderFavorites();
   else _baseRenderFinal();
-  if(state.tab==='services'||state.tab==='expert'){
+  if(state.tab==='services'||state.tab==='expert'||state.tab==='chat'||state.tab==='favorites'){
     bindDynamicHandlers();bindRegionAndMaps();startHeroCarousel();view.scrollTop=0;
+    if(state.tab==='chat'){const th=document.getElementById('chatThread');if(th)th.scrollTop=th.scrollHeight;}
   }
 };
 
@@ -1889,12 +2008,121 @@ try{document.title='۴ دیواری — املاکی آنلاین شما';}catch
 
 /* ---------- Hero نهایی: اعتماد + بازدید + هزینه ---------- */
 heroCarouselHtml=function(){
+  /* F20/F21: هر متن با تصویر مرتبط در پس‌زمینه + تأکید بر اعتماد، حریم محرمانه و جلوگیری از کلاهبرداری */
   const a=[
-    ['hero-art-house','⌂','اعتماد شما، رضایت ما','اطلاعات ملک، مدارک و مسیر معامله در یک پرونده منظم.'],
-    ['hero-art-map','⌖','قبل از رفتن، ملک را ببینید','عکس، ویدئو، بازدید مجازی و محدوده ملک را بررسی کنید.'],
-    ['hero-art-trust','✓','برای معاملات مهم، کارشناس رسمی','درخواست کارشناسی رسمی را ثبت کنید و گزارش کارشناس را در پرونده نگه دارید.'],
-    ['hero-art-3d','◇','بازدید مجازی؛ نزدیک‌تر به بازدید واقعی','از داخل برنامه مرحله‌به‌مرحله ملک را ببینید.'],
-    ['hero-art-discount','٪','۷۰٪ تخفیف اولین معامله','پیشنهادهای تخفیفی در زمان پرداخت و طبق شرایط همان خدمت اعمال می‌شوند.']
+    ['hero-art-house','🏠','۴ دیواری؛ املاک معتبر شما','هر آگهی با پرونده شفاف و مدارک بررسی‌شده؛ تا با خیال راحت معامله کنید.'],
+    ['hero-art-expert','⚖️','ثبت درخواست کارشناس رسمی دادگستری','قبل از معامله‌های مهم، گزارش رسمی کارشناس را در پرونده ملک داشته باشید.'],
+    ['hero-art-3d','🕶️','قبل از رفتن، ملک را ببینید','بازدید مجازی و نمای محدوده ملک؛ کمتر راه بروید، دقیق‌تر و مطمئن‌تر انتخاب کنید.'],
+    ['hero-art-trust','🛡️','اطلاعات شما، محرمانه می‌ماند','مدارک هویتی و اسناد مالکیت هرگز در آگهی عمومی نمایش داده نمی‌شود و فقط نزد اپراتور محفوظ است.'],
+    ['hero-art-fraud','🚨','مراقب کلاهبرداری‌های ملکی باشید','هرگز پیش از بازدید ملک، استعلام سند و احراز هویت مالک، هیچ مبلغی واریز نکنید.']
   ];
-  return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="trust-strip"><b>🛡️ حریم خصوصی و شفافیت</b><span>مدارک خصوصی جدا از اطلاعات عمومی نگهداری می‌شوند و هزینه خدمت قبل از پرداخت نمایش داده می‌شود.</span></div><div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>موقعیت و محدوده</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>';
+  return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="trust-strip"><b>🛡️ اعتماد، حریم محرمانه و امنیت معامله</b><span>مدارک خصوصی جدا از آگهی عمومی نگهداری می‌شود؛ هزینه خدمات قبل از پرداخت شفاف اعلام می‌شود و هیچ واریزی بدون احراز هویت مالک و استعلام سند انجام ندهید.</span></div><div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>موقعیت و محدوده</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>';
 };
+
+/* ============================ v0.8 — چت، واکنش، کارشناس فروش، علاقه‌مندی، ناوبری برگشت ============================ */
+const CHAT_KEY='khb_chats_v1', REACT_KEY='khb_reactions_v1', AGENTS_KEY='khb_agents_v1';
+
+/* ---------- F10: گفتگوی درون‌برنامه‌ای ---------- */
+function chatLoad(id){ try{ const all=JSON.parse(localStorage.getItem(CHAT_KEY))||{}; return all[id]||[]; }catch(e){ return []; } }
+function chatSave(id,arr){ try{ const all=JSON.parse(localStorage.getItem(CHAT_KEY))||{}; all[id]=arr.slice(-100); localStorage.setItem(CHAT_KEY,JSON.stringify(all)); }catch(e){} }
+function openChat(listingId){ if(!listingId) return; state.chat={listingId}; state.tab='chat'; render(); }
+function renderChat(){
+  const id=state.chat&&state.chat.listingId;
+  const l=listings.find(x=>x.id===id);
+  const msgs=chatLoad(id);
+  return `<div class="back-row" data-back="chat-back">→ بازگشت به آگهی</div>
+    <div class="section-title" style="margin-top:0">💬 گفتگو درباره: ${escapeHtml(l?.title||'آگهی')}</div>
+    <div class="muted" style="margin-bottom:10px">${l?.agent?.name?('کارشناس فروش: '+escapeHtml(l.agent.name)):'آگهی‌دهنده'}</div>
+    <div id="chatThread" class="chat-thread">${msgs.length?msgs.map(m=>`<div class="chat-msg ${m.mine?'mine':''}"><div>${escapeHtml(m.body)}</div><small>${fmtDate(m.ts)}</small></div>`).join(''):'<div class="empty-state"><div class="ic">💬</div><div>گفتگو را آغاز کنید؛ پیام شما برای آگهی‌دهنده ارسال می‌شود.</div></div>'}</div>
+    <div class="chat-input-row"><input type="text" id="chatInput" placeholder="پیام خود را بنویسید..." maxlength="1000"><button class="btn btn-primary btn-sm" id="chatSend">ارسال</button></div>`;
+}
+
+/* ---------- F18: لایک/دیس‌لایک + علاقه‌مندی ---------- */
+function reactLoad(){ try{ return JSON.parse(localStorage.getItem(REACT_KEY))||{by:{},counts:{}}; }catch(e){ return {by:{},counts:{}}; } }
+function reactSave(r){ try{ localStorage.setItem(REACT_KEY,JSON.stringify(r)); }catch(e){} }
+function reactionCounts(l){ const r=reactLoad(); return r.counts[l.id]||{like:0,dislike:0}; }
+function setReaction(id,val){
+  const r=reactLoad(); const prev=r.by[id];
+  r.counts[id]=r.counts[id]||{like:0,dislike:0};
+  if(prev===val){ delete r.by[id]; r.counts[id][val]=Math.max(0,r.counts[id][val]-1); }
+  else{ if(prev) r.counts[id][prev]=Math.max(0,r.counts[id][prev]-1); r.by[id]=val; r.counts[id][val]++; }
+  reactSave(r);
+}
+function likedIds(){ const r=reactLoad(); return Object.keys(r.by).filter(k=>r.by[k]==='like'); }
+function renderFavorites(){
+  const ids=likedIds();
+  const items=listings.filter(l=>ids.includes(l.id));
+  return `<div class="section-title">❤️ علاقه‌مندی‌های من</div>
+    <div class="muted" style="margin-bottom:10px">آگهی‌هایی که پسندیده‌اید اینجا ذخیره می‌شوند.</div>`
+    +(items.length?items.map(renderListingCard).join(''):'<div class="empty-state"><div class="ic">💔</div><div>هنوز آگهی‌ای را پسند نکرده‌اید.</div></div>');
+}
+
+/* ---------- F15: بایگانی آگهی‌دهنده + رتبه ستاره‌ای ---------- */
+function agentsLoad(){ try{ return JSON.parse(localStorage.getItem(AGENTS_KEY))||{}; }catch(e){ return {}; } }
+function agentKey(l){ return (l.phone||l.agent?.name||l.id||'unknown')+''; }
+function agentRecord(l){ const a=agentsLoad(); return a[agentKey(l)]||{deals:0}; }
+function agentStars(l){
+  const deals=agentRecord(l).deals||0;
+  const n=Math.min(5,deals);
+  return '★'.repeat(n)+'☆'.repeat(5-n)+(deals?` <small>${toFa(deals)} معامله ثبت‌شده</small>`:' <small>بدون سابقه معامله</small>');
+}
+function agentRegisterDeal(l){
+  const a=agentsLoad(); const k=agentKey(l);
+  a[k]=a[k]||{deals:0,name:'',photo:null,listings:[]};
+  a[k].deals++; a[k].name=l.agent?.name||a[k].name; a[k].photo=l.agent?.photo||a[k].photo;
+  if(!a[k].listings.includes(l.id)) a[k].listings.push(l.id);
+  try{ localStorage.setItem(AGENTS_KEY,JSON.stringify(a)); }catch(e){}
+}
+
+/* ---------- رویدادهای ماژول v0.8 ---------- */
+const _v8Bind=bindDynamicHandlers;
+bindDynamicHandlers=function(){
+  _v8Bind();
+  const send=document.getElementById('chatSend');
+  if(send){
+    const doSend=()=>{
+      const inp=document.getElementById('chatInput'); const body=(inp.value||'').trim(); if(!body) return;
+      const id=state.chat.listingId; const arr=chatLoad(id);
+      arr.push({body,mine:true,ts:Date.now()}); chatSave(id,arr); render();
+      /* پاسخ خودکار نمایشی تا اتصال کامل Backend پیام‌رسانی */
+      setTimeout(()=>{ const a2=chatLoad(id); a2.push({body:'سلام، پیام شما دریافت شد؛ به‌زودی پاسخ می‌دهم.',mine:false,ts:Date.now()}); chatSave(id,a2); if(state.tab==='chat') render(); },1500);
+    };
+    send.onclick=doSend;
+    document.getElementById('chatInput')?.addEventListener('keydown',e=>{ if(e.key==='Enter') doSend(); });
+  }
+  const backChat=document.querySelector('[data-back="chat-back"]');
+  if(backChat) backChat.addEventListener('click',()=>{ const id=state.chat?.listingId; state.chat=null; state.tab='browse'; state.browse.detailId=id||null; render(); });
+};
+
+/* ---------- F15: ثبت معامله در بایگانی آگهی‌دهنده هنگام ثبت قرارداد ---------- */
+const _v8Contract=openContractModal;
+openContractModal=function(l){
+  _v8Contract(l);
+  const saveBtn=document.getElementById('contractSave');
+  if(saveBtn){ const old=saveBtn.onclick; saveBtn.onclick=null;
+    saveBtn.addEventListener('click',()=>{ const before=l.contract; /* ثبت در هندلر اصلی انجام می‌شود */ setTimeout(()=>{ if(l.contract && l.contract!==before) agentRegisterDeal(l); },50); }, true);
+  }
+};
+
+/* ---------- F11: پشته ناوبری داخلی برای دکمه برگشت گوشی ---------- */
+(function(){
+  let lastKey=null, restoring=false;
+  const snap=()=>JSON.stringify({t:state.tab,ps:state.post.screen,pt:state.post.step,ts:state.tenders.screen,tt:state.tenders.step,d:state.browse.detailId,c:state.chat?.listingId||null,o:state.operator.selectedId});
+  const _r=render;
+  render=function(){
+    if(!restoring){ const k=snap(); if(k!==lastKey){ try{ history.pushState({k},''); }catch(e){} lastKey=k; } }
+    _r();
+  };
+  window.addEventListener('popstate',()=>{
+    restoring=true;
+    if(state.chat){ state.chat=null; state.tab='browse'; }
+    else if(state.browse.detailId){ state.browse.detailId=null; }
+    else if(state.tab==='post' && state.post.screen==='wizard' && state.post.step>1){ state.post.step--; }
+    else if(state.tab==='post' && state.post.screen==='mine'){ state.post.screen='wizard'; }
+    else if(state.tab==='tenders' && state.tenders.screen==='wizard' && state.tenders.step>1){ state.tenders.step--; }
+    else if(state.tab==='tenders' && state.tenders.screen!=='list'){ state.tenders.screen='list'; }
+    else if(state.operator.selectedId){ state.operator.selectedId=null; }
+    else if(state.tab!=='browse'){ state.tab='browse'; }
+    render(); restoring=false;
+  });
+})();
