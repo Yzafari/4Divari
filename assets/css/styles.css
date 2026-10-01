@@ -410,7 +410,7 @@ label.field-label{
 .wizard-kicker{font-size:11px;color:var(--primary);font-weight:800;margin-bottom:10px}
 .step-title{font-size:21px;font-weight:900;line-height:1.5;margin:4px 0 4px}
 .step-sub{font-size:12.5px;line-height:2;color:var(--ink-soft)}
-..page-guidance{
+.page-guidance{
   background:linear-gradient(135deg,var(--primary-tint),var(--surface));
   border:1px solid var(--line);
   border-radius:16px;
@@ -447,7 +447,7 @@ label.field-label{
 .privacy-hero span{
   font-size:13px;
 }
-..trust-strip{
+.trust-strip{
   display:flex;
   gap:8px;
   align-items:center;
@@ -618,7 +618,7 @@ label.field-label{
   color:var(--primary-dark);
   letter-spacing:.15px;
 }
-.brand-logo{background:#0b0b0b;border:1px solid #242424;padding:3px}.location-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.location-pill{border:1px solid var(--line);background:#0d0d0d;color:var(--ink-soft);border-radius:999px;padding:7px 10px;font:600 11px Tahoma,Arial,sans-serif;cursor:pointer}.location-pill.active{background:var(--primary-tint);border-color:var(--primary);color:#8DE0B1}.location-pill.all{border-color:#5d4526;color:#F0BE75}.multi-location-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:12px}.multi-location-box summary{cursor:pointer;font-size:13px;font-weight:800;color:var(--ink);list-style:none}.multi-location-box summary::-webkit-details-marker{display:none}.multi-location-box summary:before{content:'⌄';display:inline-block;margin-left:7px;color:var(--primary)}.multi-location-section{margin-top:11px}.multi-location-section b{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px}.multi-location-scroll{max-height:170px;overflow:auto;padding:1px}.selection-count{font-size:10.5px;color:var(--primary-dark);margin-top:7px}.foreign-note{font-size:10.5px;line-height:1.8;color:var(--ink-soft);margin-top:8px}.country-flag{font-size:15px}.section-title,.page-section-title{font-weight:850}
+.brand-logo{background:var(--surface);border:1px solid var(--line);padding:3px}.location-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.location-pill{border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);border-radius:999px;padding:7px 10px;font:600 11px Tahoma,Arial,sans-serif;cursor:pointer}.location-pill.active{background:var(--primary-tint);border-color:var(--primary);color:var(--primary-dark)}.location-pill.all{border-color:#5d4526;color:#F0BE75}.multi-location-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:12px}.multi-location-box summary{cursor:pointer;font-size:13px;font-weight:800;color:var(--ink);list-style:none}.multi-location-box summary::-webkit-details-marker{display:none}.multi-location-box summary:before{content:'⌄';display:inline-block;margin-left:7px;color:var(--primary)}.multi-location-section{margin-top:11px}.multi-location-section b{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px}.multi-location-scroll{max-height:170px;overflow:auto;padding:1px}.selection-count{font-size:10.5px;color:var(--primary-dark);margin-top:7px}.foreign-note{font-size:10.5px;line-height:1.8;color:var(--ink-soft);margin-top:8px}.country-flag{font-size:15px}.section-title,.page-section-title{font-weight:850}
 
 /* ============================ ۴ دیواری 0.7 feature UI ============================ */
 .video-upload-card,.boundary-card,.service-card,.tour-plan{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px;box-shadow:var(--shadow)}
@@ -693,7 +693,7 @@ main{
   overflow-x:hidden;
 }
 .tabbar{padding-bottom:calc(6px + env(safe-area-inset-bottom));}
-.hero-carousel-large{min-height:174px;background:#0b0f0d;}
+.hero-carousel-large{min-height:174px;background:var(--surface);}
 .hero-carousel-large .hero-slide{
   min-height:154px;
   padding:20px 18px;
@@ -726,3 +726,69 @@ main{
 .hero-carousel-large .hero-art-offer{background-image:url("../branding/hero-2.jpg");}
 .quick-action .quick-icon-img{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-bottom:6px;}
 .quick-action .quick-icon-img img{width:28px;height:28px;object-fit:contain;display:block;}
+
+
+/* ============================ v0.8 — خوانایی فونت (F19)، تم روشن (F17)، جذابیت بصری (F22) ============================ */
+html{font-size:16.5px;}
+body{font-size:16px; line-height:1.9;}
+.muted{font-size:14px;}
+.listing-desc{font-size:15px;}
+.field-hint{font-size:12.5px;}
+.section-title{font-size:17px;}
+.cat-chip{font-size:15px;}
+.btn{font-size:15px;}
+.badge{font-size:12.5px;}
+.summary-row{font-size:14px;}
+.tab-btn{font-size:13px;}
+.about-box{font-size:14px;}
+.info-box,.warn-box{font-size:13.5px;}
+select,input[type=text],input[type=number],input[type=tel],input[type=email],textarea{font-size:16px;} /* جلوگیری از زوم/بستن کیبورد هنگام ورود عدد */
+
+/* F17: دکمه تم خواناتر */
+#themeBtn{width:auto; min-width:46px; height:44px; padding:0 12px; font-size:20px;}
+
+/* F22: جلوه‌های بصری */
+.topbar{box-shadow:0 4px 18px rgba(0,0,0,.18); border-bottom:1px solid var(--line);}
+.listing-card{transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;}
+.listing-card:hover{transform:translateY(-2px); box-shadow:0 14px 34px rgba(0,0,0,.22); border-color:var(--primary);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#F0A34E); box-shadow:0 6px 16px rgba(231,160,77,.35); transition:transform .15s ease, box-shadow .15s ease;}
+.btn-primary:active{transform:scale(.98);}
+.btn-success{box-shadow:0 6px 16px rgba(83,199,125,.3);}
+.cat-chip{transition:all .18s ease;}
+.cat-chip:hover{transform:translateY(-1px); border-color:var(--primary);}
+.hero-carousel-large{border-radius:20px;}
+.detail-hero{background:linear-gradient(135deg,var(--primary),var(--primary-dark));}
+.quick-action{transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;}
+.quick-action:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.18);}
+.feature-tile{transition:transform .15s ease, border-color .15s ease;}
+.feature-tile:hover{transform:translateY(-1px);}
+
+/* F14: کارت کارشناس فروش */
+.agent-card{display:flex; gap:10px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px;}
+.agent-avatar{width:52px; height:52px; border-radius:50%; overflow:hidden; background:var(--primary-tint); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;}
+.agent-avatar img{width:100%; height:100%; object-fit:cover;}
+.agent-info b{font-size:14px; display:block;}
+.agent-info small{color:var(--ink-soft); font-size:11.5px;}
+.agent-stars{color:#E7A04D; font-size:15px; letter-spacing:1px; margin-top:2px;}
+.agent-stars small{color:var(--ink-soft); font-size:11px; letter-spacing:0;}
+
+/* F18: ردیف لایک/دیس‌لایک */
+.reaction-row{display:flex; gap:8px; margin:6px 0 10px;}
+.reaction-row .btn{flex:1;}
+
+/* F10: چت */
+.chat-thread{display:flex; flex-direction:column; gap:8px; min-height:200px; max-height:55vh; overflow-y:auto; padding:10px; background:var(--bg); border-radius:14px; border:1px solid var(--line);}
+.chat-msg{max-width:80%; background:var(--surface); border:1px solid var(--line); border-radius:14px 14px 14px 4px; padding:9px 12px; font-size:14px; align-self:flex-start; line-height:1.9;}
+.chat-msg.mine{background:var(--primary-tint); border-color:var(--primary); align-self:flex-end; border-radius:14px 14px 4px 14px;}
+.chat-msg small{display:block; font-size:10px; color:var(--ink-soft); margin-top:3px;}
+.chat-input-row{display:flex; gap:8px; margin-top:10px;}
+.chat-input-row .btn{flex:0 0 84px;}
+
+/* F20: تصاویر پس‌زمینه اسلایدهای Hero */
+.hero-carousel-large .hero-art-house{background-image:url("../branding/hero-house.jpg");}
+.hero-carousel-large .hero-art-map{background-image:url("../branding/hero-map.jpg");}
+.hero-carousel-large .hero-art-trust{background-image:url("../branding/hero-trust.jpg");}
+.hero-carousel-large .hero-art-3d{background-image:url("../branding/hero-3d.jpg");}
+.hero-carousel-large .hero-art-expert{background-image:url("../branding/hero-expert.jpg");}
+.hero-carousel-large .hero-art-fraud{background-image:url("../branding/hero-fraud.jpg");}
+.hero-carousel-large .hero-art-offer{background-image:url("../branding/hero-offer.jpg");}
