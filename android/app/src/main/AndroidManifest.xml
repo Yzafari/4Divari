@@ -9,8 +9,7 @@
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/AppTheme"
         android:label="۴ دیواری"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/icon"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config">
 
