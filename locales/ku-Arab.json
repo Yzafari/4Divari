@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "۴ دیواری",
+    "tagline": "املاکی آنلاین شما"
+  },
+
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "retry": "Retry",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm"
+  },
+
+  "home": {
+    "postListing": "Post Listing",
+    "propertyMap": "Property Map",
+    "about": "About 4Divari"
+  },
+
+  "language": {
+    "title": "App Language",
+    "select": "Select Language"
+  }
+}
