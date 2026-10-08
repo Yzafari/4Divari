@@ -1,37 +1,37 @@
 {
   "app": {
-    "name": "۴ دیواری",
-    "tagline": "املاکی آنلاین شما"
+    "name": "٤ دیواری",
+    "tagline": "ئیملاکی ئۆنلاینەکەتان"
   },
 
   "common": {
-    "ok": "OK",
-    "cancel": "Cancel",
-    "close": "Close",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "search": "Search",
-    "back": "Back",
-    "next": "Next",
-    "previous": "Previous",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "retry": "Retry",
-    "yes": "Yes",
-    "no": "No",
-    "confirm": "Confirm"
+    "ok": "باشە",
+    "cancel": "هەڵوەشاندنەوە",
+    "close": "داخستن",
+    "save": "پاشەکەوتکردن",
+    "delete": "سڕینەوە",
+    "edit": "دەستکاریکردن",
+    "search": "گەڕان",
+    "back": "گەڕانەوە",
+    "next": "دواتر",
+    "previous": "پێشوو",
+    "loading": "لە بارکردندایە...",
+    "error": "هەڵە",
+    "success": "کردارەکە بە سەرکەوتوویی ئەنجامدرا",
+    "retry": "هەوڵدانەوە",
+    "yes": "بەڵێ",
+    "no": "نەخێر",
+    "confirm": "پشتڕاستکردنەوە"
   },
 
   "home": {
-    "postListing": "Post Listing",
-    "propertyMap": "Property Map",
-    "about": "About 4Divari"
+    "postListing": "تۆمارکردنی ڕیکلام",
+    "propertyMap": "نەخشەی موڵکەکان",
+    "about": "دەربارەی ٤ دیواری"
   },
 
   "language": {
-    "title": "App Language",
-    "select": "Select Language"
+    "title": "زمانی بەرنامە",
+    "select": "هەڵبژاردنی زمان"
   }
 }
