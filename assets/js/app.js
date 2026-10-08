@@ -2638,7 +2638,10 @@ state.userRegion=loadUserRegion();
 if(!state.userRegion.province && !state.userRegion.city){setTimeout(()=>detectUserRegion({silent:true}),700);}
 
 /* ============================ شروع ============================ */
-render();
+(async function(){
+  await window.i18n.initI18n();
+  render();
+})();
 
 
 function loadLeafletForMap(){
