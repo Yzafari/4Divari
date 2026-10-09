@@ -293,8 +293,8 @@ def user_public_profile(user_id:str):
     c=db(); u=c.execute('SELECT id,full_name,avatar,deals_count,created_at FROM users WHERE id=?',(user_id,)).fetchone(); c.close()
     if not u: raise HTTPException(404,'کاربر یافت نشد')
     d=dict(u)
-d['deals_count']=int(d.get('deals_count') or 0)
-return d
+    d['deals_count']=int(d.get('deals_count') or 0)
+    return d
 
 @app.post('/api/users/me/avatar')
 async def upload_avatar(file:UploadFile=File(...),u=Depends(auth)):
