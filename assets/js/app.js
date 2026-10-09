@@ -2290,8 +2290,38 @@ function startHeroCarousel(){
     });
   });
 }
-function heroCarouselHtml(){const a=[['hero-art-house','⌂','ملک شما، با پرونده‌ای منظم','آگهی، مدارک و سابقه ملک را در یک مسیر مشخص ثبت کنید.'],['hero-art-map','⌖','ملک را روی نقشه پیدا کنید','موقعیت ملک را انتخاب کنید و آگهی‌های اطراف را ببینید.'],['hero-art-trust','✓','امنیت اطلاعات، قبل از معامله','مدارک هویتی و مالکیتی از آگهی عمومی جدا نگهداری می‌شوند.'],['hero-art-3d','◇','آینده: بازدید مجازی و 3D','برای آگهی‌های منتخب، امکان تور مجازی و نمای سه‌بعدی اضافه می‌شود.']];return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div>
-<div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>مشاهده ملک‌ها روی نقشه</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>'}
+function heroCarouselHtml() {
+  const a = [
+    ['hero-art-house', '⌂', 'ملک شما، با پرونده‌ای منظم', 'آگهی، مدارک و سابقه ملک را در یک مسیر مشخص ثبت کنید.'],
+    ['hero-art-map', '⌖', 'ملک را روی نقشه پیدا کنید', 'موقعیت ملک را انتخاب کنید و آگهی‌های اطراف را ببینید.'],
+    ['hero-art-trust', '✓', 'امنیت اطلاعات، قبل از معامله', 'مدارک هویتی و مالکیتی از آگهی عمومی جدا نگهداری می‌شوند.'],
+    ['hero-art-3d', '◇', 'آینده: بازدید مجازی و 3D', 'برای آگهی‌های منتخب، امکان تور مجازی و نمای سه‌بعدی اضافه می‌شود.']
+  ];
+
+  return `<div class="hero-carousel hero-carousel-large">${
+    a.map((x, i) =>
+      '<div class="hero-slide ' + x[0] + ' ' + (i ? '' : 'show') +
+      '" data-hero-slide="' + i + '"><div class="hero-art-icon">' +
+      x[1] + '</div><div class="hero-slide-copy"><h3>' + x[2] +
+      '</h3><p>' + x[3] + '</p></div></div>'
+    ).join('')
+  }<div class="hero-dots">${
+    a.map((x, i) =>
+      '<span class="hero-dot ' + (i ? '' : 'on') +
+      '" data-hero-dot="' + i + '"></span>'
+    ).join('')
+  }</div></div>
+  <div class="quick-actions">
+    <button class="quick-action" data-quick="post">
+      <span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small>
+    </button>
+    <button class="quick-action" data-quick="map">
+      <span>⌖</span><b>نقشه املاک</b><small>مشاهده ملک‌ها روی نقشه</small>
+    </button>
+  </div>
+  <div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div>
+  <div class="about-box" id="aboutBox" style="display:none">${ABOUT_TEXT.replace(/\n/g, '<br><br>')}</div>`;
+}
 function renderBrowse(){
   if(state.browse.detailId){
     const l=listings.find(x=>x.id===state.browse.detailId&&!x.isTender);
