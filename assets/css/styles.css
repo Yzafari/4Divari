@@ -792,3 +792,38 @@ select,input[type=text],input[type=number],input[type=tel],input[type=email],tex
 .hero-carousel-large .hero-art-expert{background-image:url("../branding/hero-expert.jpg");}
 .hero-carousel-large .hero-art-fraud{background-image:url("../branding/hero-fraud.jpg");}
 .hero-carousel-large .hero-art-offer{background-image:url("../branding/hero-offer.jpg");}
+
+.external-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  margin-bottom:10px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
+}
+
+.external-card-body{
+  min-width:0;
+  flex:1;
+}
+
+.external-card h3{
+  font-size:14px;
+  margin:0 0 5px;
+}
+
+.external-card p{
+  font-size:12px;
+  color:var(--ink-soft);
+  margin:0 0 5px;
+  line-height:1.8;
+}
+
+.external-card small{
+  color:var(--ink-soft);
+}
+
+
