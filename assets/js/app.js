@@ -168,6 +168,22 @@ const COUNTRIES = [
   {id:'AF',name:'افغانستان',flag:'🇦🇫'},
   {id:'PK',name:'پاکستان',flag:'🇵🇰'}
 ];
+const EXTERNAL_SEARCH_COUNTRIES = [
+  {id:'TR',name:'ترکیه',flag:'🇹🇷'},
+  {id:'AZ',name:'آذربایجان',flag:'🇦🇿'},
+  {id:'AM',name:'ارمنستان',flag:'🇦🇲'},
+  {id:'GE',name:'گرجستان',flag:'🇬🇪'},
+  {id:'IQ',name:'عراق',flag:'🇮🇶'},
+  {id:'AE',name:'امارات',flag:'🇦🇪'},
+  {id:'QA',name:'قطر',flag:'🇶🇦'},
+  {id:'SA',name:'عربستان',flag:'🇸🇦'},
+  {id:'KW',name:'کویت',flag:'🇰🇼'},
+  {id:'BH',name:'بحرین',flag:'🇧🇭'},
+  {id:'OM',name:'عمان',flag:'🇴🇲'},
+  {id:'IT',name:'ایتالیا',flag:'🇮🇹'},
+  {id:'DE',name:'آلمان',flag:'🇩🇪'},
+  {id:'CN',name:'چین',flag:'🇨🇳'}
+];
 const countryById=id=>COUNTRIES.find(x=>x.id===id)||COUNTRIES[0];
 const countryLabel=id=>countryById(id).name;
 
@@ -1367,14 +1383,7 @@ function drawerHtml(){
   const notify=localStorage.getItem('khb_push_enabled')==='1';
   return `<div class="drawer">
    <div class="drawer-title">
-  <button
-    class="icon-btn"
-    id="drawerClose"
-    style="background:var(--primary-tint);color:var(--primary-dark);"
-    aria-label="بازگشت">
-    ←
-  </button>
-
+  <button class="icon-btn" id="drawerClose" style="background:var(--primary-tint);color:var(--primary-dark);" aria-label="بازگشت">←</button>
   <span>۴ دیواری</span>
 </div>
     <div class="menu-profile"><div class="menu-avatar">⌂</div><div><b>بازار هوشمند املاک</b><small>خانه، زمین، کشاورزی، تجاری و بیشتر</small></div></div>
@@ -1661,12 +1670,12 @@ if(isTenderScreen){
   });
   const fRooms=document.getElementById('fRooms'); if(fRooms) fRooms.addEventListener('change', e=>{ state.browse.rooms=e.target.value; render(); });
   view.querySelectorAll('[data-fcat]').forEach(el=>el.addEventListener('click', ()=>{ const v=el.dataset.fcat; state.browse.category = state.browse.category===v? '' : v; render(); }));
- view.querySelectorAll('[data-open]').forEach(el=>{
-  el.addEventListener('click',()=>{
-    window.__KHB_BROWSE_SCROLL=view.scrollTop;
-    window.__KHB_RETURN_FROM_DETAIL=false;
-
-    state.browse.detailId=el.dataset.open;
+ view.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click', ()=>{
+  window.__KHB_BROWSE_SCROLL=view.scrollTop;
+  window.__KHB_RETURN_FROM_DETAIL=false;
+  state.browse.detailId=el.dataset.open;
+  render();
+}));
 
     render();
   });
@@ -1709,7 +1718,17 @@ if(isTenderScreen){
     }
   });
 });
-  const backBrowse=view.querySelector('[data-back="browse"]'); if(backBrowse) backBrowse.addEventListener('click', ()=>{ state.browse.detailId=null; render(); });
+const backBrowse=view.querySelector('[data-back="browse"]');
+
+if(backBrowse) backBrowse.addEventListener('click', ()=>{
+  state.browse.detailId=null;
+  window.__KHB_RETURN_FROM_DETAIL=true;
+  render();
+
+  setTimeout(()=>{
+    window.__KHB_RETURN_FROM_DETAIL=false;
+  },0);
+});
   const contactBtn=view.querySelector('[data-contact]'); if(contactBtn) contactBtn.addEventListener('click', ()=> openChat(contactBtn.dataset.contact));
   const callBtn=view.querySelector('[data-call]'); if(callBtn) callBtn.addEventListener('click', ()=>{
     const l=listings.find(x=>x.id===callBtn.dataset.call);
@@ -2248,7 +2267,8 @@ function startHeroCarousel(){
     });
   });
 }
-function heroCarouselHtml(){const a=[['hero-art-house','⌂','ملک شما، با پرونده‌ای منظم','آگهی، مدارک و سابقه ملک را در یک مسیر مشخص ثبت کنید.'],['hero-art-map','⌖','ملک را روی نقشه پیدا کنید','موقعیت ملک را انتخاب کنید و آگهی‌های اطراف را ببینید.'],['hero-art-trust','✓','امنیت اطلاعات، قبل از معامله','مدارک هویتی و مالکیتی از آگهی عمومی جدا نگهداری می‌شوند.'],['hero-art-3d','◇','آینده: بازدید مجازی و 3D','برای آگهی‌های منتخب، امکان تور مجازی و نمای سه‌بعدی اضافه می‌شود.']];return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="trust-strip"><b>حریم خصوصی</b><span>مدارک شما برای آگهی عمومی نمایش داده نمی‌شود.</span></div><div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>مشاهده ملک‌ها روی نقشه</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>'}
+function heroCarouselHtml(){const a=[['hero-art-house','⌂','ملک شما، با پرونده‌ای منظم','آگهی، مدارک و سابقه ملک را در یک مسیر مشخص ثبت کنید.'],['hero-art-map','⌖','ملک را روی نقشه پیدا کنید','موقعیت ملک را انتخاب کنید و آگهی‌های اطراف را ببینید.'],['hero-art-trust','✓','امنیت اطلاعات، قبل از معامله','مدارک هویتی و مالکیتی از آگهی عمومی جدا نگهداری می‌شوند.'],['hero-art-3d','◇','آینده: بازدید مجازی و 3D','برای آگهی‌های منتخب، امکان تور مجازی و نمای سه‌بعدی اضافه می‌شود.']];return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div>
+<div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>مشاهده ملک‌ها روی نقشه</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>'}
 function renderBrowse(){
   if(state.browse.detailId){
     const l=listings.find(x=>x.id===state.browse.detailId&&!x.isTender);
@@ -2599,8 +2619,21 @@ render=function(){
   const view=document.getElementById('view');
   /* F3/F5: در مراحل ثبت آگهی/مناقصه موقعیت اسکرول حفظ می‌شود تا صفحه بعد از
      انتخاب گزینه یا افزودن عکس به بالای صفحه نپرد. */
-  const keepY=(state.tab==='post'||state.tab==='tenders');
-  const prevY=keepY?view.scrollTop:0;
+const restoringBrowseDetail =
+  state.tab==='browse' &&
+  state.browse.detailId===null &&
+  window.__KHB_RETURN_FROM_DETAIL===true;
+
+const keepY =
+  state.tab==='post' ||
+  state.tab==='tenders' ||
+  restoringBrowseDetail;
+
+const prevY=keepY ? (
+  restoringBrowseDetail
+    ? (window.__KHB_BROWSE_SCROLL||0)
+    : view.scrollTop
+) : 0;
   Object.values(carouselTimers).forEach(clearInterval);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab));
   if(state.tab==='browse') view.innerHTML=renderBrowse();
@@ -3296,7 +3329,79 @@ window.KHB_HANDLE_ANDROID_BACK=function(){
   return false;
 };
 
+async function searchExternalListings({
+  country,
+  query='',
+  city='',
+  dealType='',
+  propertyType='',
+  minPrice='',
+  maxPrice=''
+}){
+  const params=new URLSearchParams();
 
+  params.set('country',country);
+  if(query) params.set('query',query);
+  if(city) params.set('city',city);
+  if(dealType) params.set('deal_type',dealType);
+  if(propertyType) params.set('property_type',propertyType);
+  if(minPrice) params.set('min_price',parseNum(minPrice));
+  if(maxPrice) params.set('max_price',parseNum(maxPrice));
+  params.set('limit','10');
 
+  const response=await fetch(
+    `${window.KHB_API_BASE||''}/api/search/external?${params.toString()}`
+  );
+
+  const data=await response.json();
+
+  if(!response.ok){
+    throw new Error(data.detail||'جستجوی خارجی ناموفق بود.');
+  }
+
+  return data;
+}
+
+function renderExternalResults(data){
+  if(!data?.results?.length){
+    return `
+      <div class="empty-state">
+        <div class="ic">🌍</div>
+        <div>نتیجه‌ای از منابع خارجی پیدا نشد.</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="section-title">
+      🌍 نتایج خارجی
+    </div>
+
+    ${data.results.map(r=>`
+      <article class="external-card">
+        <div class="external-card-body">
+          <h3>${escapeHtml(r.title||'آگهی ملک')}</h3>
+
+          ${r.snippet
+            ? `<p>${escapeHtml(r.snippet)}</p>`
+            : ''
+          }
+
+          <small>
+            ${escapeHtml(r.source||'منبع خارجی')}
+          </small>
+        </div>
+
+        <a
+          href="${escapeHtml(r.url)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-outline btn-sm">
+          مشاهده آگهی
+        </a>
+      </article>
+    `).join('')}
+  `;
+}
 
 
