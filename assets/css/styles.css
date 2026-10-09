@@ -504,7 +504,7 @@ label.field-label{
   background:
     radial-gradient(circle at 85% 20%,rgba(240,138,60,.7),transparent 35%),
     linear-gradient(135deg,rgba(47,143,99,.95),rgba(36,76,61,.98));
-  opacity:.98;
+  opacity:.75;
 }
 
 .hero-carousel-large .hero-slide:after{
@@ -849,4 +849,51 @@ main {
   z-index: 20;
   padding-bottom: calc(6px + env(safe-area-inset-bottom));
 }
+/* کادرهای کشویی جست‌وجوی ملک */
+.filter-accordion{
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
 
+.filter-accordion > summary{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 15px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.filter-accordion > summary::-webkit-details-marker{
+  display: none;
+}
+
+.filter-accordion > summary::after{
+  content: "＋";
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.filter-accordion[open] > summary::after{
+  content: "−";
+}
+
+.filter-accordion-body{
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.filter-accordion .multi-location-box,
+.filter-accordion .filter-card{
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
