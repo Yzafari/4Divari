@@ -810,58 +810,77 @@ function validateStep(step,d,isTender){
   return false;
 }
 
-      value="${escapeHtml(d.tender?.budget||'')}"
+function tenderStepBasic(d){
+  return stepCategory(d, true);
+}
+
+function tenderStepScope(d){
+  const t = d.tender || {};
+
+  return `
+    <label class="field-label">شرح موضوع مناقصه</label>
+    <textarea id="tScope" rows="5" maxlength="5000"
+      placeholder="شرح دقیق کار، کالا یا خدمات موردنیاز">${escapeHtml(t.scope || '')}</textarea>
+
+    <label class="field-label">شرایط و الزامات شرکت در مناقصه</label>
+    <textarea id="tRequirements" rows="5" maxlength="5000"
+      placeholder="شرایط فنی، مدارک لازم و الزامات شرکت‌کنندگان">${escapeHtml(t.requirements || '')}</textarea>
+  `;
+}
+
+function tenderStepTerms(d){
+  const t = d.tender || {};
+
+  return `
+    <label class="field-label">شماره مناقصه</label>
+    <input type="text" id="tNumber"
+      value="${escapeHtml(t.number || '')}"
+      placeholder="شماره یا شناسه مناقصه">
+
+    <label class="field-label">مهلت ارسال پیشنهاد</label>
+    <input type="date" id="tDeadline"
+      value="${escapeHtml(t.deadline || '')}">
+
+    <label class="field-label">مبلغ برآوردی (تومان)</label>
+    <input type="number" min="0" id="tBudget"
+      value="${escapeHtml(t.budget || '')}"
       placeholder="مبلغ به تومان">
 
     <label class="field-label">مبلغ / نوع ضمانت شرکت در مناقصه</label>
-    <input
-      type="text"
-      id="tGuarantee"
-      value="${escapeHtml(d.tender?.guarantee||'')}"
+    <input type="text" id="tGuarantee"
+      value="${escapeHtml(t.guarantee || '')}"
       placeholder="مبلغ یا توضیح ضمانت">
 
     <label class="field-label">نوع ضمانت</label>
     <select id="tGuaranteeType">
       <option value="">انتخاب کنید</option>
-      <option value="bank">ضمانت‌نامه بانکی</option>
-      <option value="deposit">سپرده / واریز</option>
-      <option value="other">سایر</option>
+      <option value="bank" ${t.guaranteeType === 'bank' ? 'selected' : ''}>ضمانت‌نامه بانکی</option>
+      <option value="deposit" ${t.guaranteeType === 'deposit' ? 'selected' : ''}>سپرده / واریز</option>
+      <option value="other" ${t.guaranteeType === 'other' ? 'selected' : ''}>سایر</option>
     </select>
 
     <label class="field-label">روش دریافت پیشنهاد</label>
     <select id="tSubmissionMethod">
       <option value="">انتخاب کنید</option>
-      <option value="electronic">الکترونیکی / سامانه</option>
-      <option value="envelope">پاکت / تحویل فیزیکی</option>
-      <option value="email">ایمیل</option>
-      <option value="other">سایر</option>
+      <option value="electronic" ${t.submissionMethod === 'electronic' ? 'selected' : ''}>الکترونیکی / سامانه</option>
+      <option value="envelope" ${t.submissionMethod === 'envelope' ? 'selected' : ''}>پاکت / تحویل فیزیکی</option>
+      <option value="email" ${t.submissionMethod === 'email' ? 'selected' : ''}>ایمیل</option>
+      <option value="other" ${t.submissionMethod === 'other' ? 'selected' : ''}>سایر</option>
     </select>
 
     <label class="field-label">نام مسئول پاسخگویی</label>
-    <input
-      type="text"
-      id="tContactName"
-      value="${escapeHtml(d.tender?.contactName||'')}">
+    <input type="text" id="tContactName"
+      value="${escapeHtml(t.contactName || '')}">
 
     <label class="field-label">شماره تماس</label>
-    <input
-      type="tel"
-      id="tContactPhone"
-      value="${escapeHtml(d.tender?.contactPhone||'')}"
+    <input type="tel" id="tContactPhone"
+      value="${escapeHtml(t.contactPhone || '')}"
       placeholder="شماره تماس برگزارکننده">
 
     <label class="field-label">توضیحات تکمیلی</label>
-    <textarea
-      id="tNotes"
-      rows="4">${escapeHtml(d.tender?.notes||'')}</textarea>
+    <textarea id="tNotes" rows="4">${escapeHtml(t.notes || '')}</textarea>
   `;
 }
-
-
-function tenderStepDocuments(d){
-  const docs=Array.isArray(d.tender?.documents)
-    ? d.tender.documents
-    : [];
 
   return `
     <div class="privacy-hero">
