@@ -1,5 +1,7 @@
 package ir.khanehbekhaneh.app;
 
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -21,7 +23,6 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
 import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -127,20 +128,35 @@ public class MainActivity extends Activity {
             }
         });
 
-      ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
-    Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-    Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+FrameLayout root = new FrameLayout(this);
 
-    int bottom = Math.max(bars.bottom, ime.bottom);
+FrameLayout.LayoutParams webParams =
+new FrameLayout.LayoutParams(
+ViewGroup.LayoutParams.MATCH_PARENT,
+ViewGroup.LayoutParams.MATCH_PARENT
+);
 
-    v.setPadding(0, bars.top, 0, bottom);
-    return insets;
+root.addView(webView, webParams);
+
+ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+Insets bars = insets.getInsets(
+WindowInsetsCompat.Type.systemBars()
+);
+
+Insets ime = insets.getInsets(
+        WindowInsetsCompat.Type.ime()
+);
+
+int bottom = Math.max(bars.bottom, ime.bottom);
+
+v.setPadding(0, bars.top, 0, bottom);
+
+return WindowInsetsCompat.CONSUMED;
+
 });
 
-setContentView(webView);
-
-// بعد از قرار گرفتن WebView داخل Window، Insets را اعمال کن
-ViewCompat.requestApplyInsets(webView);
+setContentView(root);
+ViewCompat.requestApplyInsets(root);
         webView.loadUrl("https://" + APP_DOMAIN + "/www/index.html");
         webView.postDelayed(() -> webView.evaluateJavascript("window.KHB_API_BASE=" + quote(BuildConfig.KHB_API_BASE) + ";", null), 150);
 
