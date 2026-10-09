@@ -12,6 +12,6 @@ if(android.includes('onBackPressed()') && !android.includes('Build.VERSION.SDK_I
 if(!android.includes('WebViewAssetLoader')) throw new Error('WebViewAssetLoader missing');
 const manifest=fs.readFileSync(path.join(root,'manifest.json'),'utf8');
 if(manifest.includes('"start_url": "/')||manifest.includes('"scope": "/')) throw new Error('Manifest uses absolute root scope');
-for(const [rel,cmd,arg] of [['assets/js/app.js','node','--check'],['service-worker.js','node','--check']]) execFileSync(cmd,[arg,path.join(root,rel)],{stdio:'ignore'});
+for(const [rel,cmd,arg] of [['assets/js/app.js','node','--check'],['service-worker.js','node','--check']]) execFileSync(cmd,[arg,path.join(root,rel)],{stdio:'inherit'});
 execFileSync(process.execPath,['-e',`JSON.parse(require('fs').readFileSync(${JSON.stringify(path.join(root,'manifest.json'))},'utf8'))`],{stdio:'inherit'});
 console.log(`VERIFY_OK ${version}`);
