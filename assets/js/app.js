@@ -2431,7 +2431,7 @@ function renderBrowse(){
           }).join('')}
         </div>
       </section>
-}).join('')+
+`).join('')+
   '</div>'+
 '</div>'+
 '</div></details>'+
