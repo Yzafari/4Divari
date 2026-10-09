@@ -1698,9 +1698,6 @@ if(isTenderScreen){
   render();
 }));
 
-    render();
-  });
-});
   view.querySelectorAll('[data-back]').forEach(el=>{
   if(el.dataset.backBound==='1') return;
 
