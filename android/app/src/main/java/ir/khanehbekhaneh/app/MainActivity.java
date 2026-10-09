@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
             }
         });
 
-       ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
+      ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
     Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
     Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
 
@@ -135,9 +135,12 @@ public class MainActivity extends Activity {
 
     v.setPadding(0, bars.top, 0, bottom);
     return insets;
-       }); 
-        ViewCompat.requestApplyInsets(webView);
-        setContentView(webView);
+});
+
+setContentView(webView);
+
+// بعد از قرار گرفتن WebView داخل Window، Insets را اعمال کن
+ViewCompat.requestApplyInsets(webView);
         webView.loadUrl("https://" + APP_DOMAIN + "/www/index.html");
         webView.postDelayed(() -> webView.evaluateJavascript("window.KHB_API_BASE=" + quote(BuildConfig.KHB_API_BASE) + ";", null), 150);
 
