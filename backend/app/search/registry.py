@@ -70,3 +70,4 @@ def supported_countries()->list[str]:
         for k,v in SOURCES.items()
         if v.enabled
     ]
+ENABLED_COUNTRIES = supported_countries()
