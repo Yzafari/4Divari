@@ -1698,6 +1698,8 @@ if(isTenderScreen){
   render();
 }));
 
+ 
+
   view.querySelectorAll('[data-back]').forEach(el=>{
   if(el.dataset.backBound==='1') return;
 
@@ -2093,8 +2095,11 @@ function fileToThumb(file,maxW,cb){compressImage(file,{maxW:maxW||900}).then(r=>
 const PAGE_GUIDANCE={1:['ملک خود را معرفی کنید','اطلاعات این مرحله برای ساخت پرونده ملک استفاده می‌شود؛ شما کنترل می‌کنید چه چیزی در آگهی عمومی نمایش داده شود.'],2:['مشخصات ملک را با دقت ثبت کنید','مواردی را که ندارید خالی بگذارید؛ این اطلاعات برای شناخت دقیق‌تر ملک و کاهش ابهام معامله ثبت می‌شود.'],3:['قیمت و نحوه پاسخگویی','قیمت پیشنهادی شما مبنای بررسی اولیه است و بدون تأیید شما تغییر نمی‌کند.'],4:['اطلاعات هویتی شما محرمانه است','مدارک هویتی برای احراز هویت دریافت می‌شود و نباید در آگهی عمومی نمایش داده شود.'],5:['اسناد ملک را با خیال راحت ارسال کنید','اسناد برای بررسی و تشکیل پرونده دریافت می‌شوند و نباید در آگهی عمومی قرار بگیرند.'],6:['تصاویر ملک را اضافه کنید','برنامه قبل از ذخیره، تصاویر را کم‌حجم می‌کند تا اینترنت و فضای ذخیره‌سازی شما کمتر مصرف شود.'],7:['یک بار دیگر پرونده را بررسی کنید','قبل از ثبت نهایی، اطلاعات و تصاویر را مرور کنید؛ سپس پرونده برای بررسی کارشناسی ارسال می‌شود.']};
 /* F9: متن راهنمای ویزارد مناقصه — ملک متعلق به سازمان برگزارکننده نیست */
 const TENDER_GUIDANCE={1:['مناقصه مدنظر را معرفی کنید','مناقصه توسط اداره یا سازمان برگزارکننده ثبت می‌شود؛ اطلاعات این مرحله برای ساخت پرونده مناقصه استفاده می‌شود.'],3:['شرایط و نحوه پاسخگویی مناقصه','اطلاعات تماس برگزارکننده مناقصه را وارد کنید.'],4:PAGE_GUIDANCE[4],5:PAGE_GUIDANCE[5],6:PAGE_GUIDANCE[6],7:PAGE_GUIDANCE[7]};
-function guidanceBox(step){const g=PAGE_GUIDANCE[step]||PAGE_GUIDANCE[1];return `<div class="back-row" data-back="services">→ بازگشت</div>
-<div class="page-guidance"><div class="page-guidance-title">'+g[0]+'</div><div>'+g[1]+'</div></div>'}
+function guidanceBox(step) {
+  const g = PAGE_GUIDANCE[step] || PAGE_GUIDANCE[1];
+  return `<div class="back-row" data-back="services">→ بازگشت</div>
+<div class="page-guidance"><div class="page-guidance-title">${g[0]}</div><div>${g[1]}</div></div>`;
+}
 function locationCard(d){const l=d.location||{},has=Number.isFinite(Number(l.lat))&&Number.isFinite(Number(l.lng));return '<div class="location-card"><div><b>موقعیت ملک روی نقشه</b><div class="muted">می‌توانید نقطه تقریبی ملک را انتخاب کنید تا حریم خصوصی مالک حفظ شود.</div></div><button class="btn btn-outline btn-sm" data-pick-location>⌖ '+(has?'ویرایش موقعیت':'انتخاب روی نقشه')+'</button>'+(has?'<div class="location-coords">'+Number(l.lat).toFixed(5)+' ، '+Number(l.lng).toFixed(5)+'</div>':'')+'</div>'}
 function openMapPicker(d){const wrap=document.createElement('div');wrap.className='modal-overlay';wrap.innerHTML='<div class="modal-sheet map-modal"><div class="modal-handle"></div><div class="drawer-title">انتخاب موقعیت ملک <button class="icon-btn modal-close">×</button></div><div class="info-box">نقطه را روی نقشه لمس کنید. موقعیت تقریبی هم قابل ثبت است.</div><div id="propertyMap" class="property-map"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-outline" data-use-location>موقعیت فعلی من</button><button class="btn btn-primary" data-save-map>ثبت موقعیت</button></div></div>';document.body.appendChild(wrap);let picked=d.location?.lat?{lat:+d.location.lat,lng:+d.location.lng}:null,map,marker;const init=()=>{if(!window.L){toast('نقشه در دسترس نیست؛ اتصال اینترنت را بررسی کنید.');return}map=L.map('propertyMap').setView(picked?[picked.lat,picked.lng]:[35.6892,51.389],picked?15:5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);if(picked)marker=L.marker([picked.lat,picked.lng]).addTo(map);map.on('click',e=>{picked={lat:e.latlng.lat,lng:e.latlng.lng};if(marker)marker.setLatLng(e.latlng);else marker=L.marker(e.latlng).addTo(map)})};requestAnimationFrame(init);wrap.querySelector('.modal-close').onclick=()=>wrap.remove();wrap.querySelector('[data-save-map]').onclick=()=>{if(!picked)return toast('یک نقطه روی نقشه انتخاب کنید.');d.location={...picked,source:'map',accuracy:'approx'};wrap.remove();render()};wrap.querySelector('[data-use-location]').onclick=()=>navigator.geolocation?.getCurrentPosition(p=>{picked={lat:p.coords.latitude,lng:p.coords.longitude};if(map){map.setView([picked.lat,picked.lng],16);map.fire('click',{latlng:L.latLng(picked.lat,picked.lng)});}},()=>toast('دسترسی به موقعیت مکانی رد شد.'))}
 function stepCategory(d,isTender){
