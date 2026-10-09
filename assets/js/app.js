@@ -809,7 +809,7 @@ function validateStep(step,d,isTender){
 
   return false;
 }
-et"
+
       value="${escapeHtml(d.tender?.budget||'')}"
       placeholder="مبلغ به تومان">
 
