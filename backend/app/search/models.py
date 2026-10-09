@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-from backend.search.registry import ENABLED_COUNTRIES
+from .registry import ENABLED_COUNTRIES
 
 
 class SearchQuery(BaseModel):
