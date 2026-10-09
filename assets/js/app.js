@@ -881,7 +881,9 @@ function tenderStepTerms(d){
     <textarea id="tNotes" rows="4">${escapeHtml(t.notes || '')}</textarea>
   `;
 }
-
+<WritingBlock id="58321" variant="standard">```javascript
+function tenderStepDocuments(d){
+const docs = Array.isArray(d.tender?.documents) ? d.tender.documents : [];
   return `
     <div class="privacy-hero">
       <b>اسناد مناقصه</b>
