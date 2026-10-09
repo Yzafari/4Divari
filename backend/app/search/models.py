@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field_validator
+from pydantic import BaseModel, Field, field_validator
+from backend.search.registry import ENABLED_COUNTRIES
 
 
 class SearchQuery(BaseModel):
@@ -15,6 +16,16 @@ class SearchQuery(BaseModel):
     min_price: Optional[int] = Field(default=None, ge=0)
     max_price: Optional[int] = Field(default=None, ge=0)
     limit: int = Field(default=10, ge=1, le=10)
+
+    @field_validator("country")
+    @classmethod
+    def validate_country(cls, value: str) -> str:
+        country = value.strip().upper()
+
+        if country not in ENABLED_COUNTRIES:
+            raise ValueError("کشور پشتیبانی نمی‌شود")
+
+        return country
 
 
 class SearchResult(BaseModel):
