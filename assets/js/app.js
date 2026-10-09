@@ -2377,10 +2377,10 @@ function renderBrowse(){
     '<div class="selection-count">'+(selectedLocations.length?('انتخاب شده: '+selectedLocations.map(escapeHtml).join(' · ')):'همه محدوده‌ها')+'</div>'+
     '<div class="foreign-note">کشورهای همجوار ایران نیز قابل جست‌وجو هستند. اجاره کوتاه‌مدت خارجی می‌تواند شامل قیمت، شهر و اطلاعات تماس آگهی‌دهنده باشد.</div></div>'+
     '<div class="filter-card">'+
-  '<button class="btn btn-outline" id="openPriceFilter">'+
-    '💰 فیلتر قیمت'+
-  '</button>'+
-'</div>'+<input type="text" inputmode="numeric" pattern="[0-9]*" id="fPriceMin" value="'+escapeHtml(b.priceMin||'')+'"></div><div><label class="field-label">حداکثر قیمت</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="fPriceMax" value="'+escapeHtml(b.priceMax||'')+'"></div></div></div>'+
+      '<button class="btn btn-outline" id="openPriceFilter">'+
+        '💰 فیلتر قیمت'+
+      '</button>'+
+    '</div>'+
     '<div class="section-title">دسته‌بندی</div>'+
 '<div class="category-groups">'+
   '<div class="category-groups-track">'+
