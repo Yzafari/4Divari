@@ -7,7 +7,8 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Header, Q
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ConfigDict
-
+from app.search.engine import ExternalSearchEngine
+from app.search.models import SearchQuery, SearchResponse
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = Path(os.getenv('KHB_DATA_DIR', ROOT / 'backend' / 'data'))
 UPLOAD_DIR = Path(os.getenv('KHB_UPLOAD_DIR', ROOT / 'backend' / 'uploads'))
@@ -29,6 +30,7 @@ if JWT_TTL < 300 or JWT_TTL > 2592000:
 MAX_UPLOAD = int(os.getenv('KHB_MAX_UPLOAD_BYTES', str(10*1024*1024)))
 APP_VERSION = '0.7.2'
 app = FastAPI(title='۴ دیواری API', version=APP_VERSION)
+external_search_engine=ExternalSearchEngine()
 origins=[x.strip() for x in os.getenv('KHB_CORS_ORIGINS','http://localhost:8080,http://127.0.0.1:8080').split(',') if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 
@@ -290,7 +292,9 @@ def user_public_profile(user_id:str):
     """F15: پروفایل عمومی آگهی‌دهنده — نام، عکس و رتبه ستاره‌ای بر اساس تعداد معاملات."""
     c=db(); u=c.execute('SELECT id,full_name,avatar,deals_count,created_at FROM users WHERE id=?',(user_id,)).fetchone(); c.close()
     if not u: raise HTTPException(404,'کاربر یافت نشد')
-    d=dict(u); d['stars']=min(5,int(d.get('deals_count') or 0)); return d
+    d=dict(u)
+d['deals_count']=int(d.get('deals_count') or 0)
+return d
 
 @app.post('/api/users/me/avatar')
 async def upload_avatar(file:UploadFile=File(...),u=Depends(auth)):
@@ -322,3 +326,41 @@ def external_search_links(q:str=Query('',max_length=200), city:str=Query('',max_
         {'source':'دیوار','url':'https://divar.ir/s/v2/?q='+quote_plus(term)},
         {'source':'شیپور','url':'https://sheypoor.com/search?q='+quote_plus(term)},
     ]}
+@app.get(
+    '/api/search/external',
+    response_model=SearchResponse
+)
+async def external_search(
+    query:SearchQuery=Depends()
+):
+
+    try:
+
+        return await external_search_engine.search(
+            query
+        )
+
+    except LookupError as exc:
+
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc)
+        )
+
+    except ValueError as exc:
+
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc)
+        )
+
+    except Exception:
+
+        raise HTTPException(
+            status_code=502,
+            detail='سرویس جستجوی خارجی موقتاً در دسترس نیست'
+        )
+
+
+
+
