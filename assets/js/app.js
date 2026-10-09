@@ -381,6 +381,8 @@ function render(){
   Object.values(carouselTimers).forEach(clearInterval);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===state.tab));
   const view=document.getElementById('view');
+  const previousViewScrollTop = view.scrollTop;
+  const previousWindowScrollY = window.scrollY;
   if(state.tab==='browse') view.innerHTML = renderBrowse();
   else if(state.tab==='post') view.innerHTML = renderPost();
   else if(state.tab==='tenders') view.innerHTML = renderTendersTab();
@@ -389,7 +391,12 @@ function render(){
   bindDynamicHandlers();
   startCardCarousels();
   startHeroCarousel();
-  if(!(state.tab==='post'||state.tab==='tenders')) view.scrollTop = 0;
+  if(state.tab==='browse'){
+  view.scrollTop = previousViewScrollTop;
+  window.scrollTo(0, previousWindowScrollY);
+}else if(!(state.tab==='post'||state.tab==='tenders')){
+  view.scrollTop = 0;
+}
 }
 
 /* ============================ کاروسل معرفی (بالای صفحه اصلی) ============================ */
@@ -1690,7 +1697,21 @@ if(isTenderScreen){
     });
   });
   const fRooms=document.getElementById('fRooms'); if(fRooms) fRooms.addEventListener('change', e=>{ state.browse.rooms=e.target.value; render(); });
-  view.querySelectorAll('[data-fcat]').forEach(el=>el.addEventListener('click', ()=>{ const v=el.dataset.fcat; state.browse.category = state.browse.category===v? '' : v; render(); }));
+  view.querySelectorAll('[data-fcat]').forEach(el=>el.addEventListener('click', ()=>{
+  const savedViewScroll = view.scrollTop;
+  const savedWindowScroll = window.scrollY;
+
+  const v = el.dataset.fcat;
+  state.browse.category = state.browse.category === v ? '' : v;
+
+  render();
+
+  requestAnimationFrame(()=>{
+    const newView = document.getElementById('view');
+    if(newView) newView.scrollTop = savedViewScroll;
+    window.scrollTo(0, savedWindowScroll);
+  });
+}));
  view.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click', ()=>{
   window.__KHB_BROWSE_SCROLL=view.scrollTop;
   window.__KHB_RETURN_FROM_DETAIL=false;
@@ -2367,21 +2388,28 @@ function renderBrowse(){
   const citySet=new Set();
   (b.provinces.length?b.provinces:Object.keys(PROVINCES)).forEach(p=>(PROVINCES[p]||[]).forEach(c=>citySet.add(c)));
   const cityButtons=[...citySet].sort((a,z)=>a.localeCompare(z,'fa')).map(c=>'<button type="button" class="location-pill '+(b.cities.includes(c)?'active':'')+'" data-city="'+escapeHtml(c)+'">'+escapeHtml(c)+'</button>').join('');
-  return heroCarouselHtml()+'<div class="legal-box" style="margin:-4px 0 12px">🚨 <b>هشدار امنیت معامله:</b> پیش از هرگونه واریز وجه، حتماً ملک را بازدید، سند را از سامانه ثبت اسناد استعلام و هویت مالک را احراز کنید. ۴ دیواری مدارک آگهی‌دهندگان را بررسی می‌کند، اما مسئولیت نهایی معامله با طرفین است.</div>'+
+  return heroCarouselHtml()+
     '<div class="section-title page-section-title">جست‌وجوی ملک</div>'+
-    '<div class="multi-location-box"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>📍 محدوده‌های جست‌وجو</b><button type="button" class="btn btn-outline btn-sm" id="clearLocations">پاک کردن</button></div>'+
+    '<details class="filter-accordion" data-filter-accordion="location" '+(b._filterOpen&&b._filterOpen.location?'open':'')+'>'+
+'<summary>📍 محدوده‌های جست‌وجو</summary>'+
+'<div class="filter-accordion-body">'+
+'<div class="multi-location-box"><div style="display:flex;justify-content:flex-end;gap:8px;align-items:center"><button type="button" class="btn btn-outline btn-sm" id="clearLocations">پاک کردن</button></div>'+
     '<div class="location-pills"><button type="button" class="location-pill all '+(b.countries.includes('IR')&&!b.provinces.length&&!b.cities.length?'active':'')+'" data-all-iran="1">🇮🇷 تمام ایران</button></div>'+
     '<details class="multi-location-section" data-sec="countries" '+((b._openSec.countries!==false)?'open':'')+'><summary>کشورها</summary><div class="location-pills">'+countries+'</div></details>'+
     '<details class="multi-location-section" data-sec="provinces" '+(b._openSec.provinces?'open':'')+'><summary>چند استان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+provinceButtons+'</div></div></details>'+
     '<details class="multi-location-section" data-sec="cities" '+(b._openSec.cities?'open':'')+'><summary>چند شهرستان هم‌زمان</summary><div class="multi-location-scroll"><div class="location-pills">'+cityButtons+'</div></div></details>'+
     '<div class="selection-count">'+(selectedLocations.length?('انتخاب شده: '+selectedLocations.map(escapeHtml).join(' · ')):'همه محدوده‌ها')+'</div>'+
-    '<div class="foreign-note">کشورهای همجوار ایران نیز قابل جست‌وجو هستند. اجاره کوتاه‌مدت خارجی می‌تواند شامل قیمت، شهر و اطلاعات تماس آگهی‌دهنده باشد.</div></div>'+
-    '<div class="filter-card">'+
-      '<button class="btn btn-outline" id="openPriceFilter">'+
-        '💰 فیلتر قیمت'+
-      '</button>'+
-    '</div>'+
-    '<div class="section-title">دسته‌بندی</div>'+
+    '<div class="foreign-note">کشورهای همجوار ایران نیز قابل جست‌وجو هستند. اجاره کوتاه‌مدت خارجی می‌تواند شامل قیمت، شهر و اطلاعات تماس آگهی‌دهنده باشد.</div></div></div></details>'+
+    '<details class="filter-accordion" data-filter-accordion="price" '+(b._filterOpen&&b._filterOpen.price?'open':'')+'>'+
+'<summary>💰 فیلتر قیمت</summary>'+
+'<div class="filter-accordion-body">'+
+'<div class="filter-card">'+
+'<button class="btn btn-outline" id="openPriceFilter">تنظیم حداقل و حداکثر قیمت</button>'+
+'</div>'+
+'</div></details>'+
+    '<details class="filter-accordion" data-filter-accordion="category" '+(b._filterOpen&&b._filterOpen.category?'open':'')+'>'+
+'<summary>🏠 دسته‌بندی ملک</summary>'+
+'<div class="filter-accordion-body">'+
 '<div class="category-groups">'+
   '<div class="category-groups-track">'+
     CATEGORY_GROUPS.map(g=>`
@@ -2403,15 +2431,22 @@ function renderBrowse(){
           }).join('')}
         </div>
       </section>
-    `).join('')+
+}).join('')+
   '</div>'+
 '</div>'+
+'</div></details>'+
     '<div class="section-title">'+toFa(r.length)+' آگهی یافت شد</div>'+(r.length?r.map(renderListingCard).join(''):'<div class="empty-state"><div class="ic">🔍</div><div>آگهی‌ای با این فیلتر پیدا نشد.</div></div>');
 }
 
 function downloadWord(l){const html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma,Arial;direction:rtl;line-height:2}h1{color:#2f8f63}table{width:100%;border-collapse:collapse}td{border:1px solid #ccc;padding:6px}</style></head><body><h1>۴ دیواری — پرونده آگهی</h1><table><tr><td>کد انتشار</td><td>'+escapeHtml(l.publishCode||l.id)+'</td></tr><tr><td>عنوان</td><td>'+escapeHtml(l.title)+'</td></tr><tr><td>دسته</td><td>'+escapeHtml(catLabel(l.category,CATEGORIES))+'</td></tr><tr><td>موقعیت</td><td>'+escapeHtml((l.province||'')+' / '+(l.city||''))+'</td></tr><tr><td>قیمت</td><td>'+escapeHtml(priceSummary(l))+'</td></tr><tr><td>توضیحات</td><td>'+escapeHtml(l.desc||'—')+'</td></tr><tr><td>تاریخ ثبت</td><td>'+escapeHtml(fmtDate(l.createdAt))+'</td></tr></table><h2>تصاویر و مدارک</h2><p>عکس ملک: '+(l.dealPhotos||[]).length+' — اسناد مالکیت: '+(l.property?.ownership||[]).length+' — اسناد ساخت‌وساز: '+(l.property?.construction||[]).length+' — مجوزات: '+(l.property?.permits||[]).length+'</p><p>اصل اسناد باید در بایگانی امن نگهداری شود.</p></body></html>';const blob=new Blob([html],{type:'application/msword;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='khb-'+(l.publishCode||l.id)+'.doc';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
 const _oldBind=bindDynamicHandlers; bindDynamicHandlers=function(){_oldBind();
+document.querySelectorAll('[data-filter-accordion]').forEach(el=>{
+    el.addEventListener('toggle',()=>{
+      state.browse._filterOpen=state.browse._filterOpen||{};
+      state.browse._filterOpen[el.dataset.filterAccordion]=el.open;
+    });
+  });
   document.querySelectorAll('.multi-location-section').forEach(sec=>sec.addEventListener('toggle',()=>{state.browse._openSec=state.browse._openSec||{};state.browse._openSec[sec.dataset.sec]=sec.open;}));
   document.querySelectorAll('[data-agent-profile]').forEach(el=>{
   el.addEventListener('click',e=>{
@@ -3105,11 +3140,11 @@ heroCarouselHtml=function(){
   const a=[
     ['hero-art-house','🏠','۴ دیواری؛ املاک معتبر شما','هر آگهی با پرونده شفاف و مدارک بررسی‌شده؛ تا با خیال راحت معامله کنید.'],
     ['hero-art-expert','⚖️','ثبت درخواست کارشناس رسمی دادگستری','قبل از معامله‌های مهم، گزارش رسمی کارشناس را در پرونده ملک داشته باشید.'],
-    ['hero-art-3d','🕶️','قبل از رفتن، ملک را ببینید','بازدید مجازی و نمای محدوده ملک؛ کمتر راه بروید، دقیق‌تر و مطمئن‌تر انتخاب کنید.'],
-    ['hero-art-trust','🛡️','اطلاعات شما، محرمانه می‌ماند','مدارک هویتی و اسناد مالکیت هرگز در آگهی عمومی نمایش داده نمی‌شود و فقط نزد اپراتور محفوظ است.'],
-    ['hero-art-fraud','🚨','مراقب کلاهبرداری‌های ملکی باشید','هرگز پیش از بازدید ملک، استعلام سند و احراز هویت مالک، هیچ مبلغی واریز نکنید.']
+    ['hero-art-1','🕶️','قبل از رفتن، ملک را ببینید','بازدید مجازی و نمای محدوده ملک؛ کمتر راه بروید، دقیق‌تر و مطمئن‌تر انتخاب کنید.'],
+    ['hero-art-2','🛡️','اطلاعات شما، محرمانه می‌ماند','مدارک هویتی و اسناد مالکیت هرگز در آگهی عمومی نمایش داده نمی‌شود و فقط نزد اپراتور محفوظ است.'],
+    ['hero-art-3','🚨','با ما قبل از انجام معامله تمامی استعلام ها گرفته میشود',' پیش از بازدید ملک، استعلام سند و احراز هویت مالک، هیچ مبلغی واریز نکنید']
   ];
-  return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="trust-strip"><b>🛡️ اعتماد، حریم محرمانه و امنیت معامله</b><span>مدارک خصوصی جدا از آگهی عمومی نگهداری می‌شود؛ هزینه خدمات قبل از پرداخت شفاف اعلام می‌شود و هیچ واریزی بدون احراز هویت مالک و استعلام سند انجام ندهید.</span></div><div class="quick-actions"><button class="quick-action" data-quick="post"><span>＋</span><b>ثبت آگهی</b><small>فروش، اجاره یا مشارکت</small></button><button class="quick-action" data-quick="map"><span>⌖</span><b>نقشه املاک</b><small>موقعیت و محدوده</small></button></div><div class="about-toggle" id="aboutToggle">درباره ۴ دیواری و نحوه کار آن بیشتر بدانید ▾</div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>';
+  return '<div class="hero-carousel hero-carousel-large">'+a.map((x,i)=>'<div class="hero-slide '+x[0]+' '+(i?'':'show')+'" data-hero-slide="'+i+'"><div class="hero-art-icon">'+x[1]+'</div><div class="hero-slide-copy"><h3>'+x[2]+'</h3><p>'+x[3]+'</p></div></div>').join('')+'<div class="hero-dots">'+a.map((x,i)=>'<span class="hero-dot '+(i?'':'on')+'" data-hero-dot="'+i+'"></span>').join('')+'</div></div><div class="about-box" id="aboutBox" style="display:none">'+ABOUT_TEXT.replace(/\n/g,'<br><br>')+'</div>';
 };
 
 /* ============================ v0.8 — چت، واکنش، کارشناس فروش، علاقه‌مندی، ناوبری برگشت ============================ */
